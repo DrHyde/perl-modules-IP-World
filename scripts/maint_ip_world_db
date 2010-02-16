@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -d
+#!/usr/local/bin/perl
 
 # program to get the WorldIP abd GeoIP databases and build a composite file for IP::World
 
