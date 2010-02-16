@@ -1,0 +1,7 @@
+Revision history for IP::World
+
+0.1   Feb 15 2010
+      * Initial version: combines data from WorldIP and GeoIP
+      * 3 modes: 0: fast, keeps data in memory
+                 1: Mmap, fast, may save memory for forked children
+                 2: tiny, slow but minimum memory, searches on disk

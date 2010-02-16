@@ -1,0 +1,152 @@
+#!/usr/local/bin/perl
+
+# program to test 3 programs that translate IP addresses to Country codes
+
+# how many IP addresses?
+use constant NIP => 4096;
+
+use strict;
+use warnings;
+use Time::HiRes qw (gettimeofday);
+use Socket;
+
+sub pack32 {
+  my $s = pack('L', $_[0]);
+  if (length($s) <= 4) {return $s}
+  if (unpack('N', $s) == $_[0]) {return substr($s, -4)}
+  return substr($s, 0, 4);
+}
+
+our ($start_s, $start_us, $end_s, $end_us, $ccod);
+our $undefs = 0;
+
+sub report {
+    my $module = shift;
+    my $us = ($end_s - $start_s) * 1000000 + $end_us - $start_us;
+    printf "%s  %8d%9.2f  %d\n",
+            $module, $us, $us/NIP, $undefs/NIP*100;
+    $undefs = 0;
+}
+print      "Module                   Total uS  uS/call  % unknown/private\n";
+
+# generate an array of random IP addresses
+# unfortunately, we have to use text ones 'cause that's all Geo::IP accepts
+
+my @ads = ();
+my @ads4 = ();
+while (@ads < NIP) {
+    my $ip4 = pack32(rand 0xFFFFFFFF);
+    push @ads4, $ip4;
+    push @ads, inet_ntoa($ip4);
+}
+
+# do IP::Country first, it's the oldest
+{
+    use IP::Country::Fast;
+    my $reg = IP::Country::Fast->new();
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $reg->inet_atocc($_);
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::Country:Fast       ');
+}
+{
+    use IP::Country::Fast;
+    my $reg = IP::Country::Fast->new();
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads4) {
+        $ccod = $reg->inet_ntocc($_);
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::Country:Fast packed');
+}
+
+# Geo::IP is middle-aged
+{
+    use Geo::IP;
+    my $gi = Geo::IP->open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $gi->country_code_by_addr($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('Geo::IP Standard       ');
+}
+{
+    use Geo::IP;
+    my $gi = Geo::IP->open_type(GEOIP_COUNTRY_EDITION, GEOIP_MEMORY_CACHE);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $gi->country_code_by_addr($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('Geo::IP Memory Cache   ');
+}
+
+# IP::World is the new kid
+use IP::World;
+{
+    my $ipw = IP::World->new(0);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World fast         ');
+}
+{
+    my $ipw = IP::World->new(0);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads4) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World fast   packed');
+}
+{
+    my $ipw = IP::World->new(1);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World mmap         ');
+}
+{
+    my $ipw = IP::World->new(1);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads4) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World mmap   packed');
+}
+{
+    my $ipw = IP::World->new(2);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World tiny         ');
+}
+{
+    my $ipw = IP::World->new(2);
+    ($start_s, $start_us) = gettimeofday;
+    for (@ads4) {
+        $ccod = $ipw->getcc($_);  
+        if (!defined $ccod || $ccod !~ /^[A-Z][A-Z]$/ || $ccod eq 'XX' || $ccod eq 'ZZ') {$undefs++}
+    }
+    ($end_s, $end_us) = gettimeofday;
+    report('IP::World tiny   packed');
+}

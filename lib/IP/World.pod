@@ -1,0 +1,179 @@
+=head1 NAME
+
+IP::World - Fast IP-address to country-code translation using multiple databases
+
+=head1 SYNOPSIS
+
+ use IP::World;
+ $ipw = IP::World->new($mode);
+ $ccod = $ipw->getcc($ipad);
+
+=head1 DESCRIPTION
+
+IP::World returns the ISO-3166 country code associated with an IP4
+address.  This version is based on two free databases from
+L<http://www.wipmania.com> and L<http://www.maxmind.com>.  An
+included application downloads the current version of the databases
+on installation, and can be scheduled to do so again whenever it's
+necessary.
+
+The author uses this package for customizing served web pages to
+the location of the visitor, particularly to quote prices of items
+for sale in the visitor's currency.  Also for server log analysis.
+
+=head2 METHODS
+
+=head3 new
+
+  $ipw = IP::World->new($mode);
+
+In object-oriented terms, this is a I<constructor>.  It returns a
+scalar object that's used in calling the I<getcc> method as described
+below.
+
+I<$mode> selects the operating mode:
+
+=over 4
+
+=item * 0: fast, keeps data in memory (643 KB at initial release, but who
+         cares these days?)
+
+=item * 1: Mmap, may save memory among sibling processes. If your
+         system doesn't support Mmap, 1 operates like 0.
+
+=item * 2: tiny, slow but saves memory by searching the database on disk
+
+=back
+
+=head3 getcc
+
+  $ccod = $ipw->getcc($ipad);
+
+I<$ipad> should contain an IP4 address in one of two formats:
+
+=over 4
+
+=item * a I<dotted quad> string like C<'13.117.255.3'>
+
+=item * a 4-byte packed binary string produced by I<inet_aton> or
+C<pack('C4', four values 0-255)>
+
+=back
+
+The return value from I<getcc> will always be a 2-character string.
+For most IP addresses this will be one of the codes defined in
+the ISO-3166 standard.  You can see these codes on
+L<http://www.iso.org/iso/english_country_names_and_code_elements>.
+
+Two return values indicate problems in determining the country code:
+
+=over 4
+
+=item * '**' indicates that I<$ipad> was not in either of the
+two formats described above.
+
+=item * '??' indicates that the database doesn't include a mapping
+for the IP address.
+
+=back
+
+=head2 SCRIPTS
+
+Three Perl scripts are installed along with IP::World:
+
+=head3 maint_ip_world_db
+
+The application checks whether new data is available from either
+data source, and downloads it if so.
+
+You can run this manually to check for a new database, or (on a
+server or other 24/7 system) you can schedule it for automatic
+execution at a non-busy time each day.
+
+In either case you should run I<maint_ip_world_db> with privilege to
+rewrite the database file.  For Unix/Linux systems this means
+running it as I<root>, such as by entering the command
+C<sudo maint_ip_world_db>.
+
+During installation, you will be asked if a command should be
+executed by I<maint_ip_world_db> when a new database has been
+downloaded (e.g., to restart a web server that uses the database).
+
+The install process for IP::World runs I<maint_ip_world_db> to create
+the initial database in the right binary-data format for your system.
+
+=head3 ip_world_dump
+
+Lists the database created by I<maint_ip_world_db>.
+
+=head3 ip_cc_benchmark
+
+Compares the performance of IP::World with that of similar modules.  
+See L</"Performance">.
+
+=head2 PERFORMANCE
+
+I<ip-benchmark> showed the following results in one run on the 
+author's server:
+
+  Module                   Total uS  uS/call  % unknown/private
+  IP::Country:Fast           129017    31.50  30
+  IP::Country:Fast packed     99388    24.26  30
+  Geo::IP Standard            54551    13.32  32
+  Geo::IP Memory Cache        23808     5.81  32
+  IP::World fast               8770     2.14  28
+  IP::World fast   packed      6880     1.68  28
+  IP::World mmap               8863     2.16  28
+  IP::World mmap   packed      6898     1.68  28
+  IP::World tiny             521039   127.21  28
+  IP::World tiny   packed    519054   126.72  28
+
+I<packed> indicates conversion of a packed 32-bit IP address rather
+than a text address.  I<ip-benchmark> uses the same set of random 
+IP addresses for all of the modules in each execution.
+
+=head1 INSTALLATION
+
+See the README file in the distribution package, or let CPAN or 
+CPANPLUS take care of installation.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2010, Craig MacKenna
+
+This module is free software; you may redistribute it and/or
+modify it under the same terms as Perl 5.10.1.  For more details,
+see the full text of the licenses
+at L<http://www.perlfoundation.org/artistic_license_1_0>
+and L<http://www.gnu.org/licenses/gpl-2.0.html>
+
+This program is distributed in the hope that it will be useful, but
+it is provided 'as is' and without any express or implied warranties.
+For details, see the full text of the licenses at the above URLs.
+
+=head1 AUTHOR
+
+Craig MacKenna <craig@animalhead.com>
+
+=head1 SEE ALSO
+
+The function of IP::World is almost the same as that of two other
+CPAN modules:
+
+=head2 IP::Country::Fast
+
+See L<http://search.cpan.org/perldoc%3FIP::Country>
+
+This module appears to have the disadvantage that its database can
+only be updated by re-installing the module.  With IP::World, MaxMind
+updates its GeoIP data monthly, and WIPmania updates its WorldIP data
+every 2 months.  Such updates are automatically downloaded if you
+schedule I<maint_ip_world_db>.
+
+=head2 Geo::IP
+
+See L<http://search.cpan.org/perldoc%3FGeo::IP>
+
+This uses the one of the two data sources that IP::World uses.
+
+=cut
