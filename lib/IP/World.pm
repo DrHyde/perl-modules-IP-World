@@ -13,7 +13,7 @@ require DynaLoader;
 # Exporter is not needed because we're object-oriented
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 sub new {
     my ($pkg, $mode) = @_;
@@ -33,5 +33,8 @@ sub new {
     bless (\$self, $pkg);
     return \$self;
 }
+##### the 'getcc' and 'DESTROY' subroutines/functions/methods are completely 
+##### implemented in the IP/World.xs file.
+
 bootstrap IP::World $VERSION;
 1;  # shows package is OK

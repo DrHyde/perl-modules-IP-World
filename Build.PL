@@ -29,11 +29,12 @@ if (!/$errwarn/) {
 unlink('test.o', 'test_mmap.o');
 
 my $class = Module::Build->subclass(code => <<'ZZZZ');
-    # this is called near the end of the Build step
+    # this is called during each Build step
     sub process_dat_files {
         my $self = shift;
         print "Building database...\n";
-        my $result = `scripts/maint_ip_world_db -t 2>&1`;
+        my $tail = $self->is_unixish() ? ' 2>&1' : '';
+        my $result = `script/maint_ip_world_db -t$tail`;
 
         # save the output of maint_ip_world_db for the first test program
         if ($result !~ /up-to-date/) {$self->config_data('result' => $result)}
@@ -42,18 +43,18 @@ ZZZZ
 my $build = $class->new(
     build_requires     => {'ExtUtils::CBuilder' => 0,
                            'Test::More'         => 0},
-    configure_requires => {'Config' => 0},
+    configure_requires => {'Config'             => 0},
     dist_author        => 'Craig MacKenna <craig@animalhead.com>',
     dynamic_config     => 1,
     license            => 'perl',
     module_name        => 'IP::World',
-    requires           => {'perl' => '5.6.1',
-                           'Carp' => 0,
+    requires           => {'perl'           => '5.6.1',
+                           'Carp'           => 0,
                            'File::ShareDir' => 0,
                            'LWP::UserAgent' => 0,
-                           'HTTP::Status' => 0,
-                           'Time::HiRes' => 0},
-    script_files        => 'scripts',
+                           'HTTP::Status'   => 0,
+                           'Time::HiRes'    => 0},
+    script_files        => 'script',
     @ccflags
 );
 # send the optimize code determined above to the C compoiler
@@ -64,8 +65,8 @@ if ($opt) {$build->config(optimize => $opt)}
 $build->add_build_element('dat');
 
 # ask whether the user wants maint_ip_world_db to run a command when the DB is updated
-my $cmd = $build->prompt(
- "Should the DB-update utility run a command when the DB is updated?\nIf so enter it (if not just return):");
+my $cmd = $build->prompt("Should the DB-update utility run a command when the "
+                       . "DB is updated?\nIf so enter it (if not just return):");
 
 # if so, store the command to run in the config_data structure(s)
 if ($cmd) {$build->config_data(cmd => $cmd)}

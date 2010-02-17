@@ -7,6 +7,7 @@ use warnings;
 use LWP::UserAgent;
 use HTTP::Status qw(:constants :is status_message);
 use File::ShareDir qw(dist_dir module_dir);
+
 use constant OUTFN => "ipworld.dat";
 
 # the archives online
@@ -19,47 +20,50 @@ my @FNS = ("worldip.en.txt",
 my @moname = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 
-my ($testing, $resp);
-
 # look for test mode operand on command line
+my ($testing, $resp);
 for (@ARGV) {
   if ($testing = /^--?t/) {last}
 }
-# get the destination directory
+# get the destination directory, make path to our output file
 my $dd;
-if ($testing) {$dd = 'blib/lib/auto/IP/World'}
-else {
+if ($testing) {
+  $dd = 'blib/lib/auto/IP/World';
+  # make sure the directories for our output exist
+  if (!-e 'blib/lib/auto') {mkdir 'blib/lib/auto'
+               or die "Can't create directory 'blib/lib/auto': $!"}
+  if (!-e 'blib/lib/auto/IP') {mkdir 'blib/lib/auto/IP'
+               or die "Can't create directory 'blib/lib/auto/IP': $!"}
+  if (!-e $dd) {mkdir $dd
+               or die "Can't create directory '${dd}': $!"}
+} else {
+
+  # not testing (a production run!)
   eval "require IP::World";
   if ($@) {die "Can't load IP::World -- $@"}
   $dd = module_dir('IP::World') or die "Can't get the destination directory";
 }
+my $outfn = "$dd/" . OUTFN;
+my $outfn_exists = -e $outfn;
+
 # create the user-agent object
 my $ua = LWP::UserAgent->new;
 
-# if we're not doing the initial build during testing, get the mod times 
-#  of the two DBs
+# if our output file already exists, get mod times of the data sources
 my $latestMod = 0;
 
-if ($testing) {
-  if (!-e 'blib/lib/auto') {mkdir 'blib/lib/auto' 
-               or die "Can't create directory 'blib/lib/auto': $!"}
-  if (!-e 'blib/lib/auto/IP') {mkdir 'blib/lib/auto/IP' 
-               or die "Can't create directory 'blib/lib/auto/IP': $!"}
-  if (!-e $dd) {mkdir $dd 
-               or die "Can't create directory '${dd}': $!"}
-}
-for my $url (@URLS) {
-  $resp = $ua->head($url);
-  if (!$resp || $resp->code != HTTP_OK) {
-    die "Source file $url could not be found: ".status_message($resp->code);
-  }
-  $_ = $resp->last_modified;
-  if ($_ > $latestMod) {$latestMod = $_}
-}
+if ($outfn_exists) {
+  for my $url (@URLS) {
+    $resp = $ua->head($url);
+    if (!$resp || $resp->code != HTTP_OK) {
+      die "Source file $url could not be found: ".status_message($resp->code);
+    }
+    $_ = $resp->last_modified;
+    if ($_ > $latestMod) {$latestMod = $_}
+} }
 
 # we will build a new database if we're testing,
 #   or either of the two sources is newer than our current DB
-my $outfn = "$dd/" . OUTFN;
 my @lines = (0) x @URLS;
 my $running = 1;
 my $ents = '';
@@ -72,22 +76,22 @@ my $lastcc = '';
 # all of these will be the same size as @URLS
 my (@in, @start, @last, @cc, @fns);
 
-if (!-e $outfn
+if (!$outfn_exists
  || $latestMod > (CORE::stat $outfn)[9]) {
- 
+
   # we are going to build a database!
   my ($i, $savemode);
-  
-  # GET the file from each source into the destination directory, 
+
+  # GET the file from each source into the destination directory,
   #   and open it for reading
   for ($i=0; $i < @URLS; $i++) {
- 
+
     if ($URLS[$i] !~ m'([^/]+)$') {die "Can't find base file name in $URLS[$i]"}
     my $fn = "$dd/$1";
-    
+
     # read the source archives from the internet
     $resp = $ua->get($URLS[$i], ':content_file' => $fn);
-    
+
     if (!$resp || $resp->code != HTTP_OK) {
       die "Source file $URLS[$i] could not be fetched: ".status_message($resp->code);
     }
@@ -103,20 +107,20 @@ if (!-e $outfn
     open ($in[$i], "-|", "unzip", '-cq', $fn, $FNS[$i]) or die "Can't open $fn for read: $!";
   }
   # if the file we're going to write exists and is set to read-only: make it writable
-  if (-e $outfn) {
+  if ($outfn_exists) {
     $savemode = (CORE::stat $outfn)[2];
     if (!-w $outfn) {
-      chmod(0666, $outfn) == 1 or die "Can't make $outfn writeable: $!"; 
+      chmod(0666, $outfn) == 1 or die "Can't make $outfn writeable: $!";
   } } else {$savemode = 0444}
 
   # start by reading the first record of each file
   for ($i=0; $i < @URLS; $i++) {getLine($i)}
-  
+
   my ($minI, $lastCurr);
-  
+
   # open the output file
   open DAT, ">$outfn" or die "Can't open $outfn for write: $!";
-  
+
   # loop thru the source files
   while ($running) {
 
@@ -125,9 +129,9 @@ if (!-e $outfn
     # if there's more than one of those, take the one with the lowest index (WorldIP is 0)
     $minI = -1;
     $lastCurr = 0xFFFFFFFF;
-    
+
     for ($i=0; $i < @URLS; $i++) {
-      if (defined $in[$i]) { 
+      if (defined $in[$i]) {
         if ($minI < 0
          || $start[$i] < $start[$minI]) {
           $minI = $i;
@@ -143,7 +147,7 @@ if (!-e $outfn
         } else {
           # start of this source is greater than start of min source,
           #  but its start can limit the size of the current entry
-          if ($start[$i] <= $lastCurr) {$lastCurr = $start[$i] - 1} 
+          if ($start[$i] <= $lastCurr) {$lastCurr = $start[$i] - 1}
         }
         if ($last[$i] < $lastCurr) {$lastCurr = $last[$i]}
     } }
@@ -157,11 +161,11 @@ if (!-e $outfn
       $lastcc = '??';
     }
     if ($cc[$minI] ne $lastcc) {
-    
-      # put the starting address in the starting address table 
+
+      # put the starting address in the starting address table
       # and the encoded country code in the saved table
       print DAT pack32($start[$minI]);
-      push @ccs, (ord(substr($cc[$minI], 0, 1)) - ord('A')) * 26 
+      push @ccs, (ord(substr($cc[$minI], 0, 1)) - ord('A')) * 26
                 + ord(substr($cc[$minI], 1))    - ord('A');
       $lastcc = $cc[$minI];
     }
@@ -181,7 +185,7 @@ if (!-e $outfn
   if ($lastOut < 0xFFFFFFFF) {
     print DAT pack32($lastOut + 1);
     push @ccs, 26*26;
-    $unknowns++; 
+    $unknowns++;
   }
   # output the country code table
   my $word;
@@ -201,12 +205,12 @@ if (!-e $outfn
 
   # set the mod time of the result file to that of the source file
   utime($latestMod, $latestMod, $outfn)  == 1
-    or die "Can't make DB modification time match that of downloaded file: $1";
-    
+    or die "Can't make modification time of $outfn match that of downloaded file: $1";
+
   # set the permissions
   chmod($savemode, $outfn) == 1 or die "Can't set permissions of $outfn to read-only: $!";
 
-  # delete the source files 
+  # delete the source files
   unlink(@fns) == @fns or die "Can't delete the source files";
 
   # if the user entered a command to run at this time, do so
@@ -219,10 +223,10 @@ if (!-e $outfn
   # show that we updated the DB (no one may be watching...)
   my ($mday, $mon, $year) = (localtime($latestMod))[3..5];
   my $mod_date = $moname[$mon].sprintf("-%d-", $mday).($year+1900);
-  print "Wrote database version $mod_date to $dd: ".(scalar(@ccs)-$unknowns)." country entries + $unknowns unknown entries\n";
+  print "Wrote IP::World database including ".(scalar(@ccs)-$unknowns)." country blocks and $unknowns unknown blocks\n";
   my $zzz = 0
 } else {
-  print "Database $outfn is up-to-date\n";
+  print "IP::World database is up-to-date\n";
 }
 
 sub pack32 {
@@ -236,7 +240,7 @@ sub getLine {
   my ($i) = @_;
   my (@f, @l, $j, $cc);
   my $fh = $in[$i];
-  
+
   LINE: while (<$fh>) {
     $lines[$i]++;
 
@@ -253,7 +257,7 @@ sub getLine {
        || $last[$i]  != ($l[0]<<24 | $l[1]<<16 | $l[2]<<8 | $l[3])) {
         warn "text and numeric IP don't match at line $lines[$i] of $FNS[$i]";
       } elsif ($start[$i] > $last[$i]) {
-        warn "starting IP > ending IPmatch at line $lines[$i] of $FNS[$i]"; 
+        warn "starting IP > ending IPmatch at line $lines[$i] of $FNS[$i]";
       } elsif ($start[$i] <= $prevLast[$i]) {
         warn "IP addresses out of order at line $lines[$i] of $FNS[$i]";
       } elsif ($cc[$i] =~ /[A-Z][A-Z]/) {  # lines with non-UC-alpha codes are quietly ignored

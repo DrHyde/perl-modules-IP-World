@@ -13,7 +13,7 @@ IP::World - Fast IP-address to country-code translation using multiple databases
 IP::World returns the ISO-3166 country code associated with an IP4
 address.  This version is based on two free databases from
 L<http://www.wipmania.com> and L<http://www.maxmind.com>.  An
-included application downloads the current version of the databases
+included application downloads and combines the databases
 on installation, and can be scheduled to do so again whenever it's
 necessary.
 
@@ -38,8 +38,7 @@ I<$mode> selects the operating mode:
 =item * 0: fast, keeps data in memory (643 KB at initial release, but who
          cares these days?)
 
-=item * 1: Mmap, may save memory among sibling processes. If your
-         system doesn't support Mmap, 1 operates like 0.
+=item * 1: Mmap, keeps data in Mmap memory, may reduce total memory requirement of sibling processes. If your system doesn't support Mmap, 1 operates like 0.
 
 =item * 2: tiny, slow but saves memory by searching the database on disk
 
@@ -69,22 +68,22 @@ Two return values indicate problems in determining the country code:
 
 =over 4
 
-=item * '**' indicates that I<$ipad> was not in either of the
+=item * ** indicates that I<$ipad> was not in either of the
 two formats described above.
 
-=item * '??' indicates that the database doesn't include a mapping
+=item * ?? indicates that the database doesn't include a mapping
 for the IP address.
 
 =back
 
 =head2 SCRIPTS
 
-Three Perl scripts are installed along with IP::World:
+Three Perl scripts are installed with IP::World:
 
 =head3 maint_ip_world_db
 
-The application checks whether new data is available from either
-data source, and downloads it if so.
+The application checks whether new data is available from either data 
+source.  If there is, it downloads the data and builds a new database.
 
 You can run this manually to check for a new database, or (on a
 server or other 24/7 system) you can schedule it for automatic
@@ -97,7 +96,7 @@ C<sudo maint_ip_world_db>.
 
 During installation, you will be asked if a command should be
 executed by I<maint_ip_world_db> when a new database has been
-downloaded (e.g., to restart a web server that uses the database).
+created (e.g., to restart a web server that uses the database).
 
 The install process for IP::World runs I<maint_ip_world_db> to create
 the initial database in the right binary-data format for your system.
@@ -108,8 +107,7 @@ Lists the database created by I<maint_ip_world_db>.
 
 =head3 ip_cc_benchmark
 
-Compares the performance of IP::World with that of similar modules.  
-See L</"Performance">.
+Compares the performance of IP::World with that of similar modules.
 
 =head2 PERFORMANCE
 
@@ -157,7 +155,7 @@ Craig MacKenna <craig@animalhead.com>
 
 =head1 SEE ALSO
 
-The function of IP::World is almost the same as that of two other
+The function of IP-World is almost the same as that of two other
 CPAN modules:
 
 =head2 IP::Country::Fast
@@ -165,7 +163,7 @@ CPAN modules:
 See L<http://search.cpan.org/perldoc%3FIP::Country>
 
 This module appears to have the disadvantage that its database can
-only be updated by re-installing the module.  With IP::World, MaxMind
+only be updated by re-installing the module.  With IP-World, MaxMind
 updates its GeoIP data monthly, and WIPmania updates its WorldIP data
 every 2 months.  Such updates are automatically downloaded if you
 schedule I<maint_ip_world_db>.
@@ -174,6 +172,6 @@ schedule I<maint_ip_world_db>.
 
 See L<http://search.cpan.org/perldoc%3FGeo::IP>
 
-This uses the one of the two data sources that IP::World uses.
+This uses one of the two data sources that IP-World uses.
 
 =cut

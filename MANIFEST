@@ -5,10 +5,10 @@ lib/IP/World.pod
 lib/IP/World.xs
 MANIFEST
 README
-scripts/ip_cc_benchmark
-scripts/ip_world_dump
-scripts/maint_ip_world_db
-t/0report_create_result.t
+script/ip_cc_benchmark
+script/ip_world_dump
+script/maint_ip_world_db
+t/0check_scripts.t
 t/1fast.t
 t/2mmap.t
 t/3tiny.t

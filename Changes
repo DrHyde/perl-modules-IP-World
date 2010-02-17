@@ -1,6 +1,15 @@
 Revision history for IP::World
 
-0.1   Feb 15 2010
+0.13  Feb 16 2010
+      * Updated Build.PL to make command line more compatible with
+        non-Unix/Linux systems.
+      * Updated script/maint_ip_world_db to improve the initial
+        decision-making as to whether to build a database.
+      * Updated t/0check_scripts.t to run perl syntax checks on
+        script/ip_world_dump and script/ip_cc_benchmark.
+      * Updated documentation in lib/IP/World.pod.
+
+0.12  Feb 15 2010
       * Initial version: combines data from WorldIP and GeoIP
       * 3 modes: 0: fast, keeps data in memory
                  1: Mmap, fast, may save memory for forked children
