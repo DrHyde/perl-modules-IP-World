@@ -35,10 +35,12 @@ I<$mode> selects the operating mode:
 
 =over 4
 
-=item * 0: fast, keeps data in memory (643 KB at initial release, but who
-         cares these days?)
+=item * 0: fast, keeps data in memory (643 KB at initial release, but 
+who cares these days?)
 
-=item * 1: Mmap, keeps data in Mmap memory, may reduce total memory requirement of sibling processes. If your system doesn't support Mmap, 1 operates like 0.
+=item * 1: Mmap, keeps data in Mmap memory, may reduce total memory 
+requirement of sibling processes. If your system doesn't support Mmap, 
+1 operates like 0.
 
 =item * 2: tiny, slow but saves memory by searching the database on disk
 

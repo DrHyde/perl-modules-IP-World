@@ -8,6 +8,7 @@ extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include "ppport.h"
 #ifdef __cplusplus
 }
 #endif
@@ -118,24 +119,27 @@ getcc(self_ref, ip_sv)
         /* binary-search the IP table */
         ips = (U32 *)self.addr;
         top = self.entries;
-        while (bottom < top-1) {
-            /* compare ip to the table entry halfway between top and bottom */
-            i = (bottom + top) >> 1;
-            if (self.mode < 2 ? ip < ips[i]
-                              : PerlIO_seek(self.IN, i<<2, 0) == 0
-                             && PerlIO_read(self.IN, &word, 4) == 4
-                             && ip < word) {
-                /* warn("ip=%10u <  table[top=%6u]=%10u", ip, i, ips[i]); */
-                top = i;
-            } else {
-                bottom = i;
-                /* warn("ip=%10u >= table[bot=%6u]=%10u", ip, i, ips[i]); */
-        }   }
-        /* warn("final index is %d, top=%d, %d entries", bottom, top, self.entries); */
-        /* the table of country codes (3 per word) follows the table of IPs
-           move the corresponding entry to ret */
-        if (self.mode < 2) word = *(ips + self.entries + bottom/3);
-        else {
+        if (self.mode < 2) {
+            /* in-memory mode */
+            while (bottom < top-1) {
+                /* compare ip to the table entry halfway between top and bottom */
+                i = (bottom + top) >> 1;
+                if (ip < ips[i]) top = i;
+                else bottom = i;
+            }
+            /* the table of country codes (3 per word) follows the table of IPs
+                move the corresponding entry to ret */
+            word = *(ips + self.entries + bottom/3);
+        } else {
+            /* DASD mode */
+            while (bottom < top-1) {
+                /* compare ip to the table entry halfway between top and bottom */
+                i = (bottom + top) >> 1;
+                PerlIO_seek(self.IN, i<<2, 0);
+                PerlIO_read(self.IN, &word, 4);
+                if (ip < word) top = i;
+                else bottom = i;
+            }
             PerlIO_seek(self.IN, (self.entries + bottom/3)<<2, 0);
             PerlIO_read(self.IN, &word, 4);
         }

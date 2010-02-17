@@ -1,5 +1,10 @@
 Revision history for IP::World
 
+0.14  Feb 17 2010
+      * Included ppport.h to maximize compatibility with older perls
+      * Changed requires to perl 5.7.3
+      * Small optimization to internal search loop in lib/IP/World.xs
+
 0.13  Feb 16 2010
       * Updated Build.PL to make command line more compatible with
         non-Unix/Linux systems.

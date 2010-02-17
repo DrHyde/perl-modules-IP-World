@@ -3,6 +3,7 @@ Changes
 lib/IP/World.pm
 lib/IP/World.pod
 lib/IP/World.xs
+lib/IP/ppport.h
 MANIFEST
 README
 script/ip_cc_benchmark

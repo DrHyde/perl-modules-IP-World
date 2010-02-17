@@ -48,7 +48,7 @@ my $build = $class->new(
     dynamic_config     => 1,
     license            => 'perl',
     module_name        => 'IP::World',
-    requires           => {'perl'           => '5.6.1',
+    requires           => {'perl'           => '5.7.3',
                            'Carp'           => 0,
                            'File::ShareDir' => 0,
                            'LWP::UserAgent' => 0,
