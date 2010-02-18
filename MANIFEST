@@ -1,5 +1,7 @@
 Build.PL
 Changes
+lib/auto/IP/World/ipworld.be
+lib/auto/IP/World/ipworld.le
 lib/IP/World.pm
 lib/IP/World.pod
 lib/IP/World.xs

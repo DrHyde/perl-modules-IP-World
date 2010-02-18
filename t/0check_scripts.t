@@ -34,8 +34,7 @@ ok ($result, "able to access result of maint_ip_world_db");
 diag ("maint_ip_world_db: $result");
 
 my $ok = $result =~ /Wrote IP::World database| is up-to-date/;
-
-ok ($ok, "previous message indicates ".($ok ? "success" : "failure"))
+ok ($ok, "maint_ip_world_db executed ".($ok ? "" : "un")."successfully")
 
 # don't let other tests go on without a DB 
 or BAIL_OUT("\nWithout a database there can be no testing!\n");

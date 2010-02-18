@@ -21,8 +21,7 @@ my $filesize = -s $path or die "$path is empty";
 my $entries = $filesize * 3 >> 4;
 my ($ips, $codes, $i, $pip, $word, $code);
 
-my $bigend = pack 'L', 1;
-$bigend = $bigend eq pack('N', 1);
+my $bigend = pack 'L', 1 eq pack('N', 1);
 
 open (IN, "<$path") or die "Can't open $path: $!";
 read (IN, $ips, $entries<<2) == $entries<<2 or die "Can't read IP addresses from $path";

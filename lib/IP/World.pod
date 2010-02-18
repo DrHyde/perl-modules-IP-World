@@ -13,7 +13,7 @@ IP::World - Fast IP-address to country-code translation using multiple databases
 IP::World returns the ISO-3166 country code associated with an IP4
 address.  This version is based on two free databases from
 L<http://www.wipmania.com> and L<http://www.maxmind.com>.  An
-included application downloads and combines the databases
+included application checks the currency of the included database
 on installation, and can be scheduled to do so again whenever it's
 necessary.
 
@@ -100,8 +100,14 @@ During installation, you will be asked if a command should be
 executed by I<maint_ip_world_db> when a new database has been
 created (e.g., to restart a web server that uses the database).
 
-The install process for IP::World runs I<maint_ip_world_db> to create
-the initial database in the right binary-data format for your system.
+The install process for IP::World runs I<maint_ip_world_db> to check
+whether the database included in the distribution is current with the 
+data sources.
+
+If I<maint_ip_world_db> is run with a C<-d> or C<--dual> switch, it 
+checks/writes two files named ipworld.be and ipworld.le, rather than 
+one file named ipworld.dat.  This is mostly for the author in making 
+new distributions.
 
 =head3 ip_world_dump
 
@@ -117,16 +123,16 @@ I<ip-benchmark> showed the following results in one run on the
 author's server:
 
   Module                   Total uS  uS/call  % unknown/private
-  IP::Country:Fast           129017    31.50  30
-  IP::Country:Fast packed     99388    24.26  30
-  Geo::IP Standard            54551    13.32  32
-  Geo::IP Memory Cache        23808     5.81  32
-  IP::World fast               8770     2.14  28
-  IP::World fast   packed      6880     1.68  28
-  IP::World mmap               8863     2.16  28
-  IP::World mmap   packed      6898     1.68  28
-  IP::World tiny             521039   127.21  28
-  IP::World tiny   packed    519054   126.72  28
+  IP::Country:Fast           128174    31.29  30
+  IP::Country:Fast packed     98741    24.11  30
+  Geo::IP Standard            54518    13.31  32
+  Geo::IP Memory Cache        23827     5.82  32
+  IP::World fast               8690     2.12  28
+  IP::World fast   packed      6850     1.67  28
+  IP::World mmap               8801     2.15  28
+  IP::World mmap   packed      6870     1.68  28
+  IP::World tiny             520360   127.04  28
+  IP::World tiny   packed    519122   126.74  28
 
 I<packed> indicates conversion of a packed 32-bit IP address rather
 than a text address.  I<ip-benchmark> uses the same set of random 
@@ -174,6 +180,14 @@ schedule I<maint_ip_world_db>.
 
 See L<http://search.cpan.org/perldoc%3FGeo::IP>
 
-This uses one of the two data sources that IP-World uses.
+This uses one of the two data sources that IP-World uses.  It also 
+will work with MaxMind's licensed, fee-based databases which include 
+more data.
+
+Unfortunately if you want this package to operate at the speeds 
+shown in L</PERFORMANCE>, you have to download a C library from the 
+internet and install it from the command line.  Someone should tell 
+them about XS modules so that the whole package can be obtained via 
+CPAN or CPANPLUS...  
 
 =cut

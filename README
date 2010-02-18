@@ -5,11 +5,12 @@ DESCRIPTION
   IP::World returns the ISO-3166 country code associated with an IP4 
   address.  It uses two free databases from WIPmania.com and MaxMind.com.  
   
-  The included application 'maint_ip_world_db' builds the IP::World 
-  database during installation, and will update the database if it's 
-  necessary to do so.  WIPmania.com and MaxMind.com release new source 
-  data bimonthly and monthly, respectively.  On a server, 'maint_ip_world_db' 
-  can be scheduled (cron'ed on Unix/Linux) to run at an unbusy time.
+  The included application 'maint_ip_world_db' checks whether the 
+  included IP::World database needs updating during installation, and 
+  can be run or scheduled to keep it current.  WIPmania.com and 
+  MaxMind.com release new source data bimonthly and monthly, 
+  respectively.  On a server, 'maint_ip_world_db' can be scheduled 
+  (cron'ed on Unix/Linux) to run at an unbusy time.
   
 LICENSE INFORMATION
 
@@ -74,11 +75,11 @@ INSTALLATION
 
 NOTES
     
-    This module requires perl 5.6 or later.
+    This module requires perl 5.7.3 or later.
 
     The author uses it for customizing web pages on his server to the 
     location of the visitor, particularly to quote prices of items 
     for sale in the visitor's currency.  Also for server log analysis.
 
     Craig MacKenna <craig@animalhead.com>
-    Feb 15 2010
+    Feb 17 2010

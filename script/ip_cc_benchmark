@@ -41,8 +41,9 @@ while (@ads < NIP) {
 }
 
 # do IP::Country first, it's the oldest
+eval "use IP::Country::Fast";
+if ($@) {die "You need to install IP::Country in order to run this benchmark\n$@\nAlso check Geo::IP and its C library"}
 {
-    use IP::Country::Fast;
     my $reg = IP::Country::Fast->new();
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
@@ -53,7 +54,6 @@ while (@ads < NIP) {
     report('IP::Country:Fast       ');
 }
 {
-    use IP::Country::Fast;
     my $reg = IP::Country::Fast->new();
     ($start_s, $start_us) = gettimeofday;
     for (@ads4) {
@@ -65,9 +65,10 @@ while (@ads < NIP) {
 }
 
 # Geo::IP is middle-aged
+my ($GI_CE, $GI_GS, $GI_MC) = eval "use Geo::IP; return (GEOIP_COUNTRY_EDITION, GEOIP_STANDARD, GEOIP_MEMORY_CACHE);";
+if ($@) {die "You need to install Geo::IP and its C library in order to run this benchmark\n$@"}
 {
-    use Geo::IP;
-    my $gi = Geo::IP->open_type(GEOIP_COUNTRY_EDITION, GEOIP_STANDARD);
+    my $gi = Geo::IP->open_type($GI_CE, $GI_GS);
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
         $ccod = $gi->country_code_by_addr($_);  
@@ -77,8 +78,7 @@ while (@ads < NIP) {
     report('Geo::IP Standard       ');
 }
 {
-    use Geo::IP;
-    my $gi = Geo::IP->open_type(GEOIP_COUNTRY_EDITION, GEOIP_MEMORY_CACHE);
+    my $gi = Geo::IP->open_type($GI_CE, $GI_MC);
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
         $ccod = $gi->country_code_by_addr($_);  

@@ -6,9 +6,7 @@ use strict;
 use warnings;
 use LWP::UserAgent;
 use HTTP::Status qw(:constants :is status_message);
-use File::ShareDir qw(dist_dir module_dir);
-
-use constant OUTFN => "ipworld.dat";
+use File::ShareDir qw(module_dir);
 
 # the archives online
 my @URLS = ("http://static.wipmania.com/static/worldip.en.text.zip",
@@ -20,34 +18,35 @@ my @FNS = ("worldip.en.txt",
 my @moname = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 
-# look for test mode operand on command line
-my ($testing, $resp);
-for (@ARGV) {
-  if ($testing = /^--?t/) {last}
-}
-# get the destination directory, make path to our output file
-my $dd;
-if ($testing) {
-  $dd = 'blib/lib/auto/IP/World';
-  # make sure the directories for our output exist
-  if (!-e 'blib/lib/auto') {mkdir 'blib/lib/auto'
-               or die "Can't create directory 'blib/lib/auto': $!"}
-  if (!-e 'blib/lib/auto/IP') {mkdir 'blib/lib/auto/IP'
-               or die "Can't create directory 'blib/lib/auto/IP': $!"}
-  if (!-e $dd) {mkdir $dd
-               or die "Can't create directory '${dd}': $!"}
-} else {
+my $mainpack = 'L';
+my ($testing, $resp, $dd, $dual_out);
 
-  # not testing (a production run!)
+# look for test mode operand on command line
+for (@ARGV) {
+  if (/^--?t/) {
+    $testing = 1;
+    $dd = 'blib/lib/auto/IP/World';
+  }
+  if (/^--?[2d]/) {
+    $dual_out = 1;
+    $dd = 'lib/auto/IP/World';
+    if (!-d $dd) {$dd = ''}
+    $mainpack = 'V';
+  }
+} 
+# get the destination directory, make path to our output file
+if (!$testing && !$dual_out) {
+  # a production check-for-update run!
   eval "require IP::World";
   if ($@) {die "Can't load IP::World -- $@"}
   $dd = module_dir('IP::World') or die "Can't get the destination directory";
 }
-my $outfn = "$dd/" . OUTFN;
+my $outfn  = "$dd/ipworld." . ($dual_out ? 'le' : 'dat');
+my $outfn2 = "$dd/ipworld.be";
 my $outfn_exists = -e $outfn;
 
 # create the user-agent object
-my $ua = LWP::UserAgent->new;
+my $ua = LWP::UserAgent->new (timeout => 30);
 
 # if our output file already exists, get mod times of the data sources
 my $latestMod = 0;
@@ -118,8 +117,11 @@ if (!$outfn_exists
 
   my ($minI, $lastCurr);
 
-  # open the output file
-  open DAT, ">$outfn" or die "Can't open $outfn for write: $!";
+  # open the output file(s)
+    open DAT,   ">$outfn"  or die "Can't open $outfn for write: $!";
+  if($dual_out) {
+    open DATBE, ">$outfn2" or die "Can't open $outfn2 for write: $!";
+  }
 
   # loop thru the source files
   while ($running) {
@@ -155,7 +157,7 @@ if (!$outfn_exists
     # if there's a hole, put its starting address in the SA table
     #   and the encoded value for 'unknown' in the saved table
     if ($start[$minI] > $lastOut + 1) {
-      print DAT pack32($lastOut + 1);
+      out($lastOut + 1);
       push @ccs, 26*26;
       $unknowns++;
       $lastcc = '??';
@@ -164,7 +166,7 @@ if (!$outfn_exists
 
       # put the starting address in the starting address table
       # and the encoded country code in the saved table
-      print DAT pack32($start[$minI]);
+      out($start[$minI]);
       push @ccs, (ord(substr($cc[$minI], 0, 1)) - ord('A')) * 26
                 + ord(substr($cc[$minI], 1))    - ord('A');
       $lastcc = $cc[$minI];
@@ -183,7 +185,7 @@ if (!$outfn_exists
   }
   # make a last "hole" entry if it's needed for the binary search
   if ($lastOut < 0xFFFFFFFF) {
-    print DAT pack32($lastOut + 1);
+    out($lastOut + 1);
     push @ccs, 26*26;
     $unknowns++;
   }
@@ -191,25 +193,29 @@ if (!$outfn_exists
   my $word;
   for ($i=0; $i < @ccs; $i++) {
     my $j = $i%3;
-    if (!$j) {
-                       $word  = $ccs[$i] << 20;
-    } elsif ($j==1) {
-                       $word |= $ccs[$i] << 10;
-    } else {
-      print DAT pack32($word |  $ccs[$i])}
+    if (!$j)      {$word  = $ccs[$i] << 20} 
+    elsif ($j==1) {$word |= $ccs[$i] << 10} 
+    else      {out($word |  $ccs[$i])}
   }
   # print a last incompelete word
-  if (@ccs%3) {print DAT pack32($word)}
+  if (@ccs%3) {out($word)}
   # output file complete
-  close DAT or die "Can't close output file $outfn: $!";
+    close DAT   or die "Can't close output file $outfn: $!";
+  if ($dual_out) {
+    close DATBE or die "Can't close output file $outfn2: $!"}
 
   # set the mod time of the result file to that of the source file
   utime($latestMod, $latestMod, $outfn)  == 1
     or die "Can't make modification time of $outfn match that of downloaded file: $1";
-
+  if ($dual_out) {
+    utime($latestMod, $latestMod, $outfn2)  == 1
+      or die "Can't make modification time of $outfn2 match that of downloaded file: $1";
+  }
   # set the permissions
   chmod($savemode, $outfn) == 1 or die "Can't set permissions of $outfn to read-only: $!";
-
+  if ($dual_out) {
+    chmod($savemode, $outfn2) == 1 or die "Can't set permissions of $outfn2 to read-only: $!";
+  }
   # delete the source files
   unlink(@fns) == @fns or die "Can't delete the source files";
 
@@ -223,19 +229,29 @@ if (!$outfn_exists
   # show that we updated the DB (no one may be watching...)
   my ($mday, $mon, $year) = (localtime($latestMod))[3..5];
   my $mod_date = $moname[$mon].sprintf("-%d-", $mday).($year+1900);
-  print "Wrote IP::World database including ".(scalar(@ccs)-$unknowns)." country blocks and $unknowns unknown blocks\n";
+  print "Wrote IP::World database".($dual_out ? " to $dd/" : '')." including "
+        .(scalar(@ccs)-$unknowns)." country blocks and $unknowns unknown blocks\n";
   my $zzz = 0
 } else {
   print "IP::World database is up-to-date\n";
 }
 
+# make a 32-bit packed value
 sub pack32 {
-  my $s = pack('L', $_[0]);
+  my $s = pack($_[0], $_[1]);
   if (length($s) <= 4) {return $s}
-  if (unpack('N', $s) == $_[0]) {return substr($s, -4)}
+  if (unpack('N', $s) == $_[1]) {return substr($s, -4)}
   return substr($s, 0, 4);
 }
 
+# output a word to the output file(s)
+sub out {
+    print DAT   pack32($mainpack, $_[0]);
+  if ($dual_out) {
+    print DATBE pack32('N',       $_[0]);
+} }
+
+# read a line from a source file
 sub getLine {
   my ($i) = @_;
   my (@f, @l, $j, $cc);
