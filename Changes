@@ -1,12 +1,35 @@
 Revision history for IP::World
 
+0.17  Feb 19 2010
+      * No change, but 0.16 got into a lost state in PAUSE/CPAN.
+
+0.16  Feb 19 2010
+      * Provided empty string as the 2nd (default) operand to the
+        prompt() call in Build.PL, so that smoke-testers won't die
+        with an UNKNOWN result.
+      * Moved the execution of script/maint_ip_world_db from the 
+        build (code) phase to the install phase.  Main advantage is
+        that tests will use an included database and so will not be 
+        subject to errors due to updating of the database by 
+        script/maint_ip_world_db.
+      * Improved script/maint_ip_world_db to use a '.tmp'file for its
+        output, then rename the extensions .dat->.bak, then .tmp->.dat.  
+        This prevents destruction of the database by a run that 
+        encounters an error.
+      * Added Probe::Perl to get the path to the current perl in 
+        t/0check_scripts.t
+      * Changed t/0check_scripts.t to do a perl check of 
+        script/maint_ip_world_db, rather than a results check.
+      * Added a way to preserve the mod time of the included databases
+        through archiving and unpacking.
+
 0.15  Feb 17 2010
       * Improved Build.PL to play better with Module::Build
-      * Pre-built databases (big- and little-endian) are now included 
-        in the distribution, to allow installation without internet 
-        access, as well as speed up the installation as long as the 
+      * Pre-built databases (big- and little-endian) are now included
+        in the distribution, to allow installation without internet
+        access, as well as speed up the installation as long as the
         included databases are recent enough not to need updating.
-      * Added a -d or --dual switch to script/maint_ip_world_db, to 
+      * Added a -d or --dual switch to script/maint_ip_world_db, to
         produce both big- and little-endian databases in one run.
         (Mostly for the author in building new distributions.)
 

@@ -28,8 +28,11 @@ use File::Copy;
 # this is called during each Build step
 sub process_dat_files {
     my $self = shift;
-    my $action = $self->current_action();
-    if ($action eq 'code') {
+    my $invoked = $self->invoked_action();
+    my $current = $self->current_action();
+    # print "invoked action is '${invoked}', current action is '${current}'\n";
+    if ($current eq 'code') {
+    
         # create destination directories as necessary
         my $dest = '';
         for ('blib/lib/auto', '/IP', '/World') {
@@ -37,35 +40,63 @@ sub process_dat_files {
                 mkdir $dest or die "Can't make dir $dest: $!";
         }   }
         $dest .= '/ipworld.dat';
+
         # select source file based on this machine's endianness
-        my $bigend = pack('L', 1) eq pack('N', 1);        
-        my $src = 'lib/auto/IP/World/ipworld.' .($bigend ? 'be' : 'le');
+        my $bigend = pack('L', 1) eq pack('N', 1);
+        my $srcdir = 'lib/auto/IP/World';
+        my $src = "$srcdir/ipworld." .($bigend ? 'be' : 'le');
+        
+        # get the proper mod time for the file from an accompanying file
+        my ($src_mod, $dest_mod);
+        my $fn = "$srcdir/modtime.dat";
+        open DAT, "<$fn" or die "Can't open $fn for read: $!";
+        read (DAT, $src_mod, 4)==4 or die "Can't read from $fn: $!";
+        close DAT;
+        $src_mod = unpack 'N', $src_mod;
+        
+        # set the mod times of the included files (in case someone copies)
+        for ('be', 'le') {
+            $fn = "$srcdir/ipworld.$_";
+            utime($src_mod, $src_mod, $fn)==1
+                or die "Can't set mod time of $fn: $!";
+        }
         # copy database if necessary
-        my $dest_mod;
-        my $src_mod = (CORE::stat $src)[9];
         if (!-e $dest 
          || $src_mod > ($dest_mod = (CORE::stat $dest)[9])
          || $src_mod == $dest_mod
          && -s $src != -s $dest) {
-            copy ($src, $dest) or die "Can't copy $src to $dest: $!";
+
+            # copy the file
+            copy ($src, $dest) 
+                or die "Can't copy $src to $dest: $!";
             utime($src_mod, $src_mod, $dest)==1 
                 or die "Can't set mod time of $dest";
             print "Copying $src -> $dest\n";
-            
-            print "Checking for database update (may rebuild)...\n";
-            my $tail = $self->is_unixish() ? ' 2>&1' : '';
-            my $result = `script/maint_ip_world_db -t$tail`;
+        }
+        # temporary until the M::B guys include docs in test
+        if ($invoked eq 'test') {$self->depends_on('docs')} 
+    }
+    if ($invoked eq 'install') {
+    
+        # run maint_ip_world_db to update the database if necessary          
+        my $tail = $self->is_unixish() ? ' 2>&1' : '';
+        print "Checking for database update (may rebuild)...\n";        
+        my $result = `script/maint_ip_world_db -t$tail`;
+        print $result;
+}   }
+ZZZZ
+
+=head1
 
             # save the output of maint_ip_world_db for a test program
             if (!$self->config_data('result')
              || $result !~ /up-to-date/) {$self->config_data('result' => $result)}
-        }
-    } # elsif ($action eq 'install') { ??? }
-}
-ZZZZ
+=cut
+
 my $build = $class->new(
     build_requires     => {'ExtUtils::CBuilder' => 0,
                            'File::Copy'         => 0,
+                           'Probe::Perl'        => 0,
                            'Test::More'         => 0},
     configure_requires => {'Config'             => 0},
     dist_author        => 'Craig MacKenna <craig@animalhead.com>',
@@ -90,7 +121,7 @@ $build->add_build_element('dat');
 
 # ask whether the user wants maint_ip_world_db to run a command when the DB is updated
 my $cmd = $build->prompt("Should the DB-update utility run a command when the "
-                       . "DB is updated?\nIf so enter it (if not just return):");
+                       . "DB is updated?\nIf so enter it (if not just return):", "");
 
 # if so, store the command to run in the config_data structure(s)
 if ($cmd) {$build->config_data(cmd => $cmd)}

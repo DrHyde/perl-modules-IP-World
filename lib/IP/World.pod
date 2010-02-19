@@ -14,8 +14,7 @@ IP::World returns the ISO-3166 country code associated with an IP4
 address.  This version is based on two free databases from
 L<http://www.wipmania.com> and L<http://www.maxmind.com>.  An
 included application checks the currency of the included database
-on installation, and can be scheduled to do so again whenever it's
-necessary.
+on installation, and can be scheduled to do so periodically.
 
 The author uses this package for customizing served web pages to
 the location of the visitor, particularly to quote prices of items
@@ -100,14 +99,8 @@ During installation, you will be asked if a command should be
 executed by I<maint_ip_world_db> when a new database has been
 created (e.g., to restart a web server that uses the database).
 
-The install process for IP::World runs I<maint_ip_world_db> to check
-whether the database included in the distribution is current with the 
-data sources.
-
-If I<maint_ip_world_db> is run with a C<-d> or C<--dual> switch, it 
-checks/writes two files named ipworld.be and ipworld.le, rather than 
-one file named ipworld.dat.  This is mostly for the author in making 
-new distributions.
+The install process for IP::World runs I<maint_ip_world_db> to ensure
+that the most recent data is installed.  
 
 =head3 ip_world_dump
 
@@ -180,14 +173,14 @@ schedule I<maint_ip_world_db>.
 
 See L<http://search.cpan.org/perldoc%3FGeo::IP>
 
-This uses one of the two data sources that IP-World uses.  It also 
-will work with MaxMind's licensed, fee-based databases which include 
+This uses one of the two data sources that IP-World uses.  It can 
+also use MaxMind's licensed, fee-based databases that include 
 more data.
 
 Unfortunately if you want this package to operate at the speeds 
-shown in L</PERFORMANCE>, you have to download a C library from the 
-internet and install it from the command line.  Someone should tell 
-them about XS modules so that the whole package can be obtained via 
-CPAN or CPANPLUS...  
+shown in L</PERFORMANCE>, you have to download a C library from 
+L<http://www.maxmind.com> and install it from the command line.  
+Someone should tell them about XS modules so that their whole 
+package can be obtained from CPAN or CPANPLUS...  
 
 =cut

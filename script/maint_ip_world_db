@@ -8,6 +8,8 @@ use LWP::UserAgent;
 use HTTP::Status qw(:constants :is status_message);
 use File::ShareDir qw(module_dir);
 
+use constant FN => 'ipworld';
+
 # the archives online
 my @URLS = ("http://static.wipmania.com/static/worldip.en.text.zip",
             "http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip");
@@ -41,17 +43,23 @@ if (!$testing && !$dual_out) {
   if ($@) {die "Can't load IP::World -- $@"}
   $dd = module_dir('IP::World') or die "Can't get the destination directory";
 }
-my $outfn  = "$dd/ipworld." . ($dual_out ? 'le' : 'dat');
-my $outfn2 = "$dd/ipworld.be";
-my $outfn_exists = -e $outfn;
+my $replfn = "$dd/".FN.".dat";
+my $replfn_exists = !$dual_out && -e $replfn;
+
+# blow up in bad calling situations
+if ($testing && $dual_out
+ || $testing && !$replfn_exists) {die "bad call: -[-]t... and -[-]d, or -[-]t... and no included database"}
+
+my $outfn  = "$dd/".FN."." . ($dual_out ? 'le' : $replfn_exists ? 'tmp' : 'dat');
+my $outfn2 = "$dd/".FN.".be";
 
 # create the user-agent object
 my $ua = LWP::UserAgent->new (timeout => 30);
 
-# if our output file already exists, get mod times of the data sources
+# if we are tasked with perhaps replacing a file, get mod times of the data sources
 my $latestMod = 0;
 
-if ($outfn_exists) {
+if ($replfn_exists) {
   for my $url (@URLS) {
     $resp = $ua->head($url);
     if (!$resp || $resp->code != HTTP_OK) {
@@ -73,16 +81,13 @@ my $unknowns = 0;
 my $lastcc = '';
 
 # all of these will be the same size as @URLS
-my (@in, @start, @last, @cc, @fns);
+my (@in, @start, @last, @cc, @fns, $i);
 
-if (!$outfn_exists
- || $latestMod > (CORE::stat $outfn)[9]) {
+if (!$replfn_exists
+ || $latestMod > (CORE::stat $replfn)[9]) {
 
   # we are going to build a database!
-  my ($i, $savemode);
-
-  # GET the file from each source into the destination directory,
-  #   and open it for reading
+  # GET the file from each source into the dest dir, open them for reading
   for ($i=0; $i < @URLS; $i++) {
 
     if ($URLS[$i] !~ m'([^/]+)$') {die "Can't find base file name in $URLS[$i]"}
@@ -105,12 +110,6 @@ if (!$outfn_exists
     # if '.gz' files need to be added to the source lists, this will get more complicated
     open ($in[$i], "-|", "unzip", '-cq', $fn, $FNS[$i]) or die "Can't open $fn for read: $!";
   }
-  # if the file we're going to write exists and is set to read-only: make it writable
-  if ($outfn_exists) {
-    $savemode = (CORE::stat $outfn)[2];
-    if (!-w $outfn) {
-      chmod(0666, $outfn) == 1 or die "Can't make $outfn writeable: $!";
-  } } else {$savemode = 0444}
 
   # start by reading the first record of each file
   for ($i=0; $i < @URLS; $i++) {getLine($i)}
@@ -210,15 +209,41 @@ if (!$outfn_exists
   if ($dual_out) {
     utime($latestMod, $latestMod, $outfn2)  == 1
       or die "Can't make modification time of $outfn2 match that of downloaded file: $1";
-  }
-  # set the permissions
-  chmod($savemode, $outfn) == 1 or die "Can't set permissions of $outfn to read-only: $!";
-  if ($dual_out) {
-    chmod($savemode, $outfn2) == 1 or die "Can't set permissions of $outfn2 to read-only: $!";
+
+    # since we can't trust a mod time to make it through dist-making and unpacking,
+    #  put the mod time for these files into an accompanying file.
+    my $mtfn = "$dd/modtime.dat";
+    open DAT, ">$mtfn" or die "Can't open for $mtfn write: $!";
+    print DAT pack 'N', $latestMod;
+    close DAT or die "Can't close $mtfn: $!";
   }
   # delete the source files
   unlink(@fns) == @fns or die "Can't delete the source files";
 
+  # if we just made a .tmp file, cycle it to become the .dat file 
+  if ($outfn =~ /tmp$/) {
+     if ($testing) {
+        eval "require Module::Build;";
+        if ($@) {die "Can't load Module::Build: $@"}
+        my $build = Module::Build->current();
+        if ($build->is_unixish()) {
+             
+          # prevent making a root-owned file in blib
+          my ($uid, $gid) = (CORE::stat $replfn)[4..5];
+          chown ($uid, $gid, $outfn)==1 
+            or die "Can't transfer owner:group from old $replfn to new: $!";
+     }  }
+     # .dat -> .bak then .tmp -> .dat
+     my $bakfn = "$dd/".FN.".bak";
+     rename   ($replfn, $bakfn)==1 or die "Can't rename $replfn to $bakfn: $!";     
+     rename   ($outfn, $replfn)==1 or die "Can't rename $outfn to $replfn: $!";;
+     $outfn = $replfn;
+  }
+  # set the permissions
+  chmod(0444, $outfn) == 1 or die "Can't set permissions of $outfn to read-only: $!";
+  if ($dual_out) {
+    chmod(0444, $outfn2) == 1 or die "Can't set permissions of $outfn2 to read-only: $!";
+  }
   # if the user entered a command to run at this time, do so
   # but not if we're just testing
   if (!$testing) {
