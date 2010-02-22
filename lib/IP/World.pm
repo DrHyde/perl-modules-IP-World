@@ -13,7 +13,7 @@ require DynaLoader;
 # Exporter is not needed because we're object-oriented
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '0.19';
+our $VERSION = '0.2';
 
 sub new {
     my ($pkg, $mode) = @_;

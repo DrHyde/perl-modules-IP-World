@@ -1,6 +1,6 @@
 Revision history for IP::World
 
-0.19  Feb 22 2010
+0.2   Feb 22 2010
       * Fixed further problem in which the DESTROY function after 
         new(1) on systems without the Mmap feature would do the wrong 
         thing, resulting in segment-faults.

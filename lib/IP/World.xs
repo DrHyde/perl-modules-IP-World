@@ -180,7 +180,7 @@ DESTROY(self_ref)
             croak("automatic 'self' operand to DESTROY is not of correct type"); 
         memcpy (&self, s, sizeof(wip_self));
 #ifdef MMAPOK
-        if (self.mode == 1) munmap((caddr_t)self.addr, (size_t)(self.entries*6));
+        if (self.mode == 1) munmap((caddr_t)self.addr, (size_t)((self.entries<<4)/3));
         else 
 #endif
         if (self.mode < 2) Safefree(self.addr);
