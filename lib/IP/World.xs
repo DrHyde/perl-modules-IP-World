@@ -183,5 +183,5 @@ DESTROY(self_ref)
         if (self.mode == 1) munmap((caddr_t)self.addr, (size_t)(self.entries*6));
         else 
 #endif
-        if (!self.mode) Safefree(self.addr);
+        if (self.mode < 2) Safefree(self.addr);
         else PerlIO_close(self.IN);

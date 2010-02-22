@@ -1,8 +1,13 @@
 Revision history for IP::World
 
+0.19  Feb 22 2010
+      * Fixed further problem in which the DESTROY function after 
+        new(1) on systems without the Mmap feature would do the wrong 
+        thing, resulting in segment-faults.
+
 0.18  Feb 21 2010
       * Fixed problem in which new(1) on systems without Mmap feature
-        wouldn't allocate memory, resuting in segment-faults on a
+        wouldn't allocate memory, resulting in segment-faults on a
         subsequent getcc or DESTROY operation.
       * Fixed problem wherein C compiler name was compound.  Thanks 
         to Stefan Rezic.

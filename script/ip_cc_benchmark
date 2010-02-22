@@ -42,8 +42,9 @@ while (@ads < NIP) {
 
 # do IP::Country first, it's the oldest
 eval "use IP::Country::Fast";
-if ($@) {die "You need to install IP::Country in order to run this benchmark\n$@\nAlso check Geo::IP and its C library"}
-{
+if ($@) {print "Install IP::Country to see its results\n"}
+else {
+  {
     my $reg = IP::Country::Fast->new();
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
@@ -52,8 +53,8 @@ if ($@) {die "You need to install IP::Country in order to run this benchmark\n$@
     }
     ($end_s, $end_us) = gettimeofday;
     report('IP::Country:Fast       ');
-}
-{
+  }
+  {
     my $reg = IP::Country::Fast->new();
     ($start_s, $start_us) = gettimeofday;
     for (@ads4) {
@@ -62,12 +63,13 @@ if ($@) {die "You need to install IP::Country in order to run this benchmark\n$@
     }
     ($end_s, $end_us) = gettimeofday;
     report('IP::Country:Fast packed');
-}
+}  }
 
 # Geo::IP is middle-aged
 my ($GI_CE, $GI_GS, $GI_MC) = eval "use Geo::IP; return (GEOIP_COUNTRY_EDITION, GEOIP_STANDARD, GEOIP_MEMORY_CACHE);";
-if ($@) {die "You need to install Geo::IP and its C library in order to run this benchmark\n$@"}
-{
+if ($@) {print "install Geo::IP (and its C library) to see its results\n"}
+else {
+  {
     my $gi = Geo::IP->open_type($GI_CE, $GI_GS);
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
@@ -76,8 +78,8 @@ if ($@) {die "You need to install Geo::IP and its C library in order to run this
     }
     ($end_s, $end_us) = gettimeofday;
     report('Geo::IP Standard       ');
-}
-{
+  }
+  {
     my $gi = Geo::IP->open_type($GI_CE, $GI_MC);
     ($start_s, $start_us) = gettimeofday;
     for (@ads) {
@@ -86,7 +88,7 @@ if ($@) {die "You need to install Geo::IP and its C library in order to run this
     }
     ($end_s, $end_us) = gettimeofday;
     report('Geo::IP Memory Cache   ');
-}
+} }
 
 # IP::World is the new kid
 use IP::World;
