@@ -5,6 +5,7 @@ author:
 build_requires:
   ExtUtils::CBuilder: 0
   File::Copy: 0
+  Module::Build: 0.36
   Probe::Perl: 0
   Test::More: 0
 configure_requires:
@@ -20,7 +21,7 @@ name: IP-World
 provides:
   IP::World:
     file: lib/IP/World.pm
-    version: 0.17
+    version: 0.18
 requires:
   Carp: 0
   File::ShareDir: 0
@@ -30,4 +31,4 @@ requires:
   perl: v5.7.3
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.17
+version: 0.18

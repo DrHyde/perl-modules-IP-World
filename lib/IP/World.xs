@@ -39,7 +39,6 @@ allocNew(filepath, fileLen, mode=0)
         wip_self self;
         UV readLen;
         PerlIO *IN;
-        U16 *ccs;
     CODE:
         /* XS part of IP::World->new
             allocate a block of memory and fill it from the ipworld.dat file */
@@ -52,10 +51,11 @@ allocNew(filepath, fileLen, mode=0)
             /* experimental feature: use mmap rather than read */
             int fd = PerlIO_fileno(IN);
             self.addr = (char *)mmap(0, fileLen, PROT_READ, MAP_SHARED, fd, 0);
-            if (self.addr == MAP_FAILED) croak ("mmap failed on %s\n", filepath);
+            if (self.addr == MAP_FAILED) 
+                croak ("mmap failed on %s: %s\n", filepath, strerror(errno));
         } else 
 #endif
-        if (!mode) {
+        if (mode < 2) {
             /* malloc a block of size fileLen */
             Newx(self.addr, fileLen, char);
             if (!self.addr) croak ("memory allocation for %s failed", filepath);
@@ -63,14 +63,15 @@ allocNew(filepath, fileLen, mode=0)
             readLen = PerlIO_read(IN, self.addr, fileLen);
             if (readLen < 0) croak("read from %s failed: %s", filepath, strerror(errno));
             if (readLen != fileLen) 
-                croak("should have read %d bytes from %s, actually read %d", 
+                croak("should have read %d bytes from %s, actually read %u", 
                       fileLen, filepath, readLen);
         }
         /* all is well */
         if (mode < 2) PerlIO_close(IN);
         else self.IN = IN;
         
-        /* for each entry there is a 4 byte address plus a 4/3 byte compressed country code */
+        /* For each entry there is a 4 byte address plus a 10 bit country code.
+             At 3 codes/word, the number of entries = 3/16 * the number of bytes */
         self.entries = fileLen*3 >> 4;
         
         /* warn("%s length %d -> %d entries", filepath, fileLen, self.entries); */

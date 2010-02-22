@@ -1,9 +1,16 @@
 Revision history for IP::World
 
-0.17  Feb 19 2010
-      * No change, but 0.16 got into a lost state in PAUSE/CPAN.
+0.18  Feb 21 2010
+      * Fixed problem in which new(1) on systems without Mmap feature
+        wouldn't allocate memory, resuting in segment-faults on a
+        subsequent getcc or DESTROY operation.
+      * Fixed problem wherein C compiler name was compound.  Thanks 
+        to Stefan Rezic.
+      * New included database, reflecting Feb update by WIPmania.
+      * Minuscule improvement in script/maint_ip_world_db, in avoiding 
+        creation of a root-owned file in blib.
 
-0.16  Feb 19 2010
+0.17  Feb 19 2010
       * Provided empty string as the 2nd (default) operand to the
         prompt() call in Build.PL, so that smoke-testers won't die
         with an UNKNOWN result.

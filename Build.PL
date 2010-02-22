@@ -7,18 +7,21 @@ use Config;
 
 my @ccflags = ();
 my $opt;
+my $cc = $Config{'cc'};
+$cc =~ s/\s+-.+$//; #remove possible trailing options
+my @ccs = split /\s+/, $cc;
 
 # test which cc optimize flags are allowed
 # move '#' from following line to next line for debugging 
 # for my $s ('-g') {  
 for my $s ('-O3', '-O2', $Config{'optimize'}) {
     if (!$s) {last}
-    if (!(system($Config{'cc'}, '-c', $s, 'test.c') >> 8)) {
+    if (!(system(@ccs, '-c', $s, 'test.c') >> 8)) {
         $opt = $s;
         last;
 }   }
 # see if this system includes Mmap
-if (!(system($Config{'cc'}, '-c', 'test_mmap.c') >> 8)) {
+if (!(system(@ccs, '-c', 'test_mmap.c') >> 8)) {
     push @ccflags, extra_compiler_flags => ["-DMMAPOK"];
 }
 unlink('test.o', 'test_mmap.o');
@@ -86,16 +89,10 @@ sub process_dat_files {
 }   }
 ZZZZ
 
-=head1
-
-            # save the output of maint_ip_world_db for a test program
-            if (!$self->config_data('result')
-             || $result !~ /up-to-date/) {$self->config_data('result' => $result)}
-=cut
-
 my $build = $class->new(
     build_requires     => {'ExtUtils::CBuilder' => 0,
                            'File::Copy'         => 0,
+                           'Module::Build'      => '0.36',
                            'Probe::Perl'        => 0,
                            'Test::More'         => 0},
     configure_requires => {'Config'             => 0},

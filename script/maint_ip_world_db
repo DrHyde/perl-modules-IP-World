@@ -35,7 +35,7 @@ for (@ARGV) {
     if (!-d $dd) {$dd = ''}
     $mainpack = 'V';
   }
-} 
+}
 # get the destination directory, make path to our output file
 if (!$testing && !$dual_out) {
   # a production check-for-update run!
@@ -192,8 +192,8 @@ if (!$replfn_exists
   my $word;
   for ($i=0; $i < @ccs; $i++) {
     my $j = $i%3;
-    if (!$j)      {$word  = $ccs[$i] << 20} 
-    elsif ($j==1) {$word |= $ccs[$i] << 10} 
+    if (!$j)      {$word  = $ccs[$i] << 20}
+    elsif ($j==1) {$word |= $ccs[$i] << 10}
     else      {out($word |  $ccs[$i])}
   }
   # print a last incompelete word
@@ -220,22 +220,25 @@ if (!$replfn_exists
   # delete the source files
   unlink(@fns) == @fns or die "Can't delete the source files";
 
-  # if we just made a .tmp file, cycle it to become the .dat file 
+  # if we just made a .tmp file, cycle it to become the .dat file
   if ($outfn =~ /tmp$/) {
      if ($testing) {
         eval "require Module::Build;";
         if ($@) {die "Can't load Module::Build: $@"}
         my $build = Module::Build->current();
+        
         if ($build->is_unixish()) {
-             
           # prevent making a root-owned file in blib
-          my ($uid, $gid) = (CORE::stat $replfn)[4..5];
-          chown ($uid, $gid, $outfn)==1 
-            or die "Can't transfer owner:group from old $replfn to new: $!";
-     }  }
+          my ($old_uid, $old_gid) = (CORE::stat $replfn)[4..5];
+          my ($new_uid, $new_gid) = (CORE::stat $outfn )[4..5];
+          if ($new_uid != $old_uid
+           || $new_gid != $old_gid) {
+            chown ($old_uid, $old_gid, $outfn)==1
+              or die "Can't transfer owner:group from old $replfn to new: $!";
+     }  } }
      # .dat -> .bak then .tmp -> .dat
      my $bakfn = "$dd/".FN.".bak";
-     rename   ($replfn, $bakfn)==1 or die "Can't rename $replfn to $bakfn: $!";     
+     rename   ($replfn, $bakfn)==1 or die "Can't rename $replfn to $bakfn: $!";
      rename   ($outfn, $replfn)==1 or die "Can't rename $outfn to $replfn: $!";;
      $outfn = $replfn;
   }
