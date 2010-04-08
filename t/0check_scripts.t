@@ -6,11 +6,9 @@ use strict;
 use warnings;
 use Test::More tests => 3;
 use Module::Build;
-use Probe::Perl();
-
-my $perl = Probe::Perl->find_perl_interpreter();
 
 my $build = Module::Build->current();
+my $perl = $build->config_data('perl') or die "Can't get path to perl";
 my $tail = $build->is_unixish() ? ' 2>&1' : '';
 
 # maint_ip_world_db was already run as part of the build step

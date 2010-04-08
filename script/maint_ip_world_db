@@ -6,11 +6,62 @@ use strict;
 use warnings;
 use LWP::UserAgent;
 use HTTP::Status qw(:constants :is status_message);
+use URI;
 use File::ShareDir qw(module_dir);
-
 use constant FN => 'ipworld';
+{
+  package ourLWP;
+  our @ISA = qw(LWP::UserAgent);
+  our $gave;
 
-# the archives online
+  sub new {
+    return LWP::UserAgent::new(@_);
+  }
+  # ask for username and password
+  sub get_basic_credentials {
+    my ($self, $realm, $proxy, $isproxy )= @_;
+    # should we compare this proxy with the one in main?
+    my $host = $main::proxy->host;
+    $isproxy or die
+      "data source $realm at $host asked for login (it shouldn't!)";
+
+    # if we think we already know the user and PW, return them to LWP::UA
+    if ($main::u
+     && $main::pw
+     && !$gave) {
+       $gave = 1;
+       return ($main::u, $main::pw)
+    }
+    if ($main::testing) {
+      # we are testing (called with a -t switch)
+      # therefore we have to let our parent ask for user & PW
+      print "PROXY\t$realm\t$host\n";
+      exit;
+
+    } elsif (-t) {
+      # almost verbatim from Gyle Aas
+      print STDERR "Enter username for proxy $realm at $host: ";
+      $main::u = <STDIN>;
+      chomp ($main::u);
+      return (undef, undef) unless length $main::u;
+
+      print STDERR "Password: ";
+      system ("stty -echo");
+      $main::pw = <STDIN>;
+      system ("stty echo");
+      print STDERR "\n";  # because we disabled echo
+      chomp ($main::pw);
+      return ($main::u, $main::pw);
+    } else {
+      # we're not testing but we're run unattended
+      return (undef, undef)
+  } }
+  1;
+}
+# globals that are visible to ourLWP above
+our ($testing, $proxy, $u, $pw);
+
+# online archives
 my @URLS = ("http://static.wipmania.com/static/worldip.en.text.zip",
             "http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip");
 # file names within the archives
@@ -19,22 +70,27 @@ my @FNS = ("worldip.en.txt",
 
 my @moname = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-
 my $mainpack = 'L';
-my ($testing, $resp, $dd, $dual_out);
+my ($dual_out, $resp, $dd);
 
-# look for test mode operand on command line
+# look for options (-testing, -dual_out, -user "user", -p "password")
+my $i=0;
+
 for (@ARGV) {
-  if (/^--?t/) {
+  if      (/^--?t/) {
     $testing = 1;
-    $dd = 'blib/lib/auto/IP/World';
-  }
-  if (/^--?[2d]/) {
+    $dd = 'blib/lib/auto/IP/World/';
+  } elsif (/^--?d/) {
     $dual_out = 1;
-    $dd = 'lib/auto/IP/World';
+    $dd = 'lib/auto/IP/World/';
     if (!-d $dd) {$dd = ''}
     $mainpack = 'V';
+  } elsif (/^--?u/) {
+    ($u  = $ARGV[$i+1]) =~ s/^"(.+?)"$/$1/;
+  } elsif (/^--?p/) {
+    ($pw = $ARGV[$i+1]) =~ s/^"(.+?)"$/$1/;
   }
+  $i++;
 }
 # get the destination directory, make path to our output file
 if (!$testing && !$dual_out) {
@@ -42,33 +98,70 @@ if (!$testing && !$dual_out) {
   eval "require IP::World";
   if ($@) {die "Can't load IP::World -- $@"}
   $dd = module_dir('IP::World') or die "Can't get the destination directory";
+  $dd .= '/';
 }
-my $replfn = "$dd/".FN.".dat";
-my $replfn_exists = !$dual_out && -e $replfn;
+my $replfn = $dd.FN.($dual_out ? ".le" : ".dat");
+my $replfn_exists = -e $replfn;
+my $replMod = $replfn_exists ? (CORE::stat $replfn)[9] : 0;
 
 # blow up in bad calling situations
 if ($testing && $dual_out
- || $testing && !$replfn_exists) {die "bad call: -[-]t... and -[-]d, or -[-]t... and no included database"}
+ || $testing && !$replfn_exists) {
+  die "bad call: -[-]t... and -[-]d, or -[-]t... and no included database";
+}
+my $outfn = $dd.FN.".".($replfn_exists ? 'tmp'
+                                       : $dual_out ? 'le' : 'dat');
+my $outfn2;
+if ($dual_out) {
+  $outfn2 = $dd.FN.".".($replfn_exists ? 'tbe' : 'be');
+}
+# create the user-agent object via the package at the start of this file
+my $ua = ourLWP->new (timeout => 30);
 
-my $outfn  = "$dd/".FN."." . ($dual_out ? 'le' : $replfn_exists ? 'tmp' : 'dat');
-my $outfn2 = "$dd/".FN.".be";
-
-# create the user-agent object
-my $ua = LWP::UserAgent->new (timeout => 30);
-
-# if we are tasked with perhaps replacing a file, get mod times of the data sources
+# see if we already know about a proxy
+if ($testing) {
+  eval "require Module::Build::ConfigData";
+  if ($@) {die "Can't load Module::Build::ConfigData: $@"}
+  $proxy = xorString(Module::Build::ConfigData->config('proxy'), $replMod);
+} else {
+  eval "require IP::World::ConfigData";
+  if ($@) {die "Can't load IP::World::ConfigData: $@"}
+  $proxy = xorString(    IP::World::ConfigData->config('proxy'), $replMod);
+}
+my $orig_proxy = $proxy;
+if (!proxy_complete($proxy)) {
+  proxy_merge ($proxy, $ENV{http_proxy});
+}
+if (!proxy_complete($proxy)) {
+  eval "require CPAN::Config";
+  if (!$@) {proxy_merge($proxy,
+                        $$CPAN::Config{http_proxy},
+                        $$CPAN::Config{proxy_user},
+                        $$CPAN::Config{proxy_pass})}
+}
+if ($proxy) {
+  # add ftp if/when we need it
+  $ua->proxy('http', $proxy);
+}
+# if we have a file already, get mod times of the data sources
 my $latestMod = 0;
-
 if ($replfn_exists) {
   for my $url (@URLS) {
-    $resp = $ua->head($url);
-    if (!$resp || $resp->code != HTTP_OK) {
+#    my $trying = 1;
+#    while ($trying) {
+      $resp = $ua->head($url);
+#      $trying = check_code($resp);
+#    }
+    if ($resp->code != HTTP_OK) {
       die "Source file $url could not be found: ".status_message($resp->code);
     }
+    if ($u && $pw) {
+      proxy_merge ($proxy, '', $u, $pw);
+    }
+    $u = $pw = '';
     $_ = $resp->last_modified;
     if ($_ > $latestMod) {$latestMod = $_}
 } }
-
 # we will build a new database if we're testing,
 #   or either of the two sources is newer than our current DB
 my @lines = (0) x @URLS;
@@ -81,24 +174,32 @@ my $unknowns = 0;
 my $lastcc = '';
 
 # all of these will be the same size as @URLS
-my (@in, @start, @last, @cc, @fns, $i);
+my (@in, @start, @last, @cc, @fns);
 
 if (!$replfn_exists
- || $latestMod > (CORE::stat $replfn)[9]) {
+ || $latestMod > $replMod) {
 
-  # we are going to build a database!
+  # we are going to build a new database or two
   # GET the file from each source into the dest dir, open them for reading
   for ($i=0; $i < @URLS; $i++) {
 
     if ($URLS[$i] !~ m'([^/]+)$') {die "Can't find base file name in $URLS[$i]"}
-    my $fn = "$dd/$1";
+    my $fn = $dd.$1;
 
     # read the source archives from the internet
-    $resp = $ua->get($URLS[$i], ':content_file' => $fn);
-
-    if (!$resp || $resp->code != HTTP_OK) {
-      die "Source file $URLS[$i] could not be fetched: ".status_message($resp->code);
+#    my $trying = 1;
+#    while ($trying) {
+      $resp = $ua->get($URLS[$i], ':content_file' => $fn);
+#      $trying = check_code($resp);
+#    }
+    if ($resp->code != HTTP_OK) {
+      die "Source file $URLS[$i] could not be fetched: "
+          . status_message($resp->code);
     }
+    if ($u && $pw) {
+      proxy_merge ($proxy, '', $u, $pw);
+    }
+    $u = $pw = '';
     # maintain the latest mod time among the sources
     $_ = $resp->last_modified;
     if ($_ > $latestMod) {$latestMod = $_}
@@ -107,8 +208,10 @@ if (!$replfn_exists
     push @fns, $fn;
 
     # open the subfile of the .zip archive that we want, through a pipe
-    # if '.gz' files need to be added to the source lists, this will get more complicated
-    open ($in[$i], "-|", "unzip", '-cq', $fn, $FNS[$i]) or die "Can't open $fn for read: $!";
+    # if '.gz' files need to be added to the source lists,
+    #  this will get more complicated
+    open ($in[$i], "-|", "unzip", '-cq', $fn, $FNS[$i])
+      or die "Can't open $fn for read: $!";
   }
 
   # start by reading the first record of each file
@@ -118,7 +221,7 @@ if (!$replfn_exists
 
   # open the output file(s)
     open DAT,   ">$outfn"  or die "Can't open $outfn for write: $!";
-  if($dual_out) {
+  if ($dual_out) {
     open DATBE, ">$outfn2" or die "Can't open $outfn2 for write: $!";
   }
 
@@ -180,7 +283,7 @@ if (!$replfn_exists
         else {$start[$i] = $lastOut+1}
     } }
     # for breaking
-#    my $zzz=0;
+    # my $zzz=0;
   }
   # make a last "hole" entry if it's needed for the binary search
   if ($lastOut < 0xFFFFFFFF) {
@@ -196,23 +299,23 @@ if (!$replfn_exists
     elsif ($j==1) {$word |= $ccs[$i] << 10}
     else      {out($word |  $ccs[$i])}
   }
-  # print a last incompelete word
+  # print a last incomplete word
   if (@ccs%3) {out($word)}
   # output file complete
-    close DAT   or die "Can't close output file $outfn: $!";
+  close   DAT   or die "Can't close output file $outfn: $!";
   if ($dual_out) {
     close DATBE or die "Can't close output file $outfn2: $!"}
 
   # set the mod time of the result file to that of the source file
-  utime($latestMod, $latestMod, $outfn)  == 1
-    or die "Can't make modification time of $outfn match that of downloaded file: $1";
+  utime($latestMod, $latestMod, $outfn)==1
+    or die "Can't make modification time of $outfn match that of source file: $1";
   if ($dual_out) {
-    utime($latestMod, $latestMod, $outfn2)  == 1
-      or die "Can't make modification time of $outfn2 match that of downloaded file: $1";
+    utime($latestMod, $latestMod, $outfn2)==1
+      or die "Can't make modification time of $outfn2 match that of source file: $1";
 
     # since we can't trust a mod time to make it through dist-making and unpacking,
     #  put the mod time for these files into an accompanying file.
-    my $mtfn = "$dd/modtime.dat";
+    my $mtfn = $dd.'modtime.dat';
     open DAT, ">$mtfn" or die "Can't open for $mtfn write: $!";
     print DAT pack 'N', $latestMod;
     close DAT or die "Can't close $mtfn: $!";
@@ -220,49 +323,76 @@ if (!$replfn_exists
   # delete the source files
   unlink(@fns) == @fns or die "Can't delete the source files";
 
-  # if we just made a .tmp file, cycle it to become the .dat file
+  # if we just made a .tmp file, cycle it (them) to become the target file
   if ($outfn =~ /tmp$/) {
-     if ($testing) {
-        eval "require Module::Build;";
-        if ($@) {die "Can't load Module::Build: $@"}
-        my $build = Module::Build->current();
-        
-        if ($build->is_unixish()) {
-          # prevent making a root-owned file in blib
-          my ($old_uid, $old_gid) = (CORE::stat $replfn)[4..5];
-          my ($new_uid, $new_gid) = (CORE::stat $outfn )[4..5];
-          if ($new_uid != $old_uid
-           || $new_gid != $old_gid) {
-            chown ($old_uid, $old_gid, $outfn)==1
-              or die "Can't transfer owner:group from old $replfn to new: $!";
-     }  } }
-     # .dat -> .bak then .tmp -> .dat
-     my $bakfn = "$dd/".FN.".bak";
-     rename   ($replfn, $bakfn)==1 or die "Can't rename $replfn to $bakfn: $!";
-     rename   ($outfn, $replfn)==1 or die "Can't rename $outfn to $replfn: $!";;
-     $outfn = $replfn;
-  }
-  # set the permissions
-  chmod(0444, $outfn) == 1 or die "Can't set permissions of $outfn to read-only: $!";
+    if ($testing) {
+      eval "require Module::Build;";
+      if ($@) {die "Can't load Module::Build: $@"}
+      my $build = Module::Build->current();
+
+      if ($build->is_unixish()) {
+        # prevent making a root-owned file in blib
+        my ($old_uid, $old_gid) = (CORE::stat $replfn)[4..5];
+        my ($new_uid, $new_gid) = (CORE::stat $outfn )[4..5];
+        if ($new_uid != $old_uid
+         || $new_gid != $old_gid) {
+          chown ($old_uid, $old_gid, $outfn)==1
+            or die "Can't transfer owner:group from old $replfn to new: $!";
+    } } }
+    # old file(s) -> .bak[xx] then new file(s) -> .dat or .le or .be
+    my @renamers = $dual_out ? (\$outfn, 'le',  'bakle', \$outfn2, 'be', 'bakbe')
+                             : (\$outfn, 'dat', 'bak');
+    while (@renamers) {
+      my ($targfn, $bakfn);
+      ($targfn = ${$renamers[0]}) =~ s/[^.]+$/$renamers[1]/e;
+      ($bakfn  = ${$renamers[0]}) =~ s/[^.]+$/$renamers[2]/e;
+      rename ($targfn, $bakfn)==1
+        or die "Can't rename $targfn to $bakfn: $!";
+      rename (${$renamers[0]}, $targfn)==1
+        or die "Can't rename ${$renamers[0]} to $targfn: $!";;
+      ${$renamers[0]} = $targfn;
+      splice (@renamers, 0, 3);
+  } }
+  # make the new output file(s) read-only
+  chmod(0444, $outfn) == 1
+    or die "Can't set permissions of $outfn to read-only: $!";
   if ($dual_out) {
-    chmod(0444, $outfn2) == 1 or die "Can't set permissions of $outfn2 to read-only: $!";
+    chmod(0444, $outfn2) == 1
+      or die "Can't set permissions of $outfn2 to read-only: $!";
   }
   # if the user entered a command to run at this time, do so
   # but not if we're just testing
-  if (!$testing) {
-    eval "require IP::World::ConfigData";
-    if ($@) {die "Can't load IP::World::ConfigData: $@"}
-    if ($_ = IP::World::ConfigData->config('cmd')) {system $_}
-  }
+  if (!$testing
+   && ($_ = IP::World::ConfigData->config('cmd'))) {system $_}
+
   # show that we updated the DB (no one may be watching...)
   my ($mday, $mon, $year) = (localtime($latestMod))[3..5];
   my $mod_date = $moname[$mon].sprintf("-%d-", $mday).($year+1900);
-  print "Wrote IP::World database".($dual_out ? " to $dd/" : '')." including "
-        .(scalar(@ccs)-$unknowns)." country blocks and $unknowns unknown blocks\n";
+  print "Wrote IP::World database".($dual_out && $dd ? " to $dd" : '')
+        .", including ".(scalar(@ccs)-$unknowns)
+        ." country blocks and $unknowns unknown blocks\n";
   my $zzz = 0
 } else {
   print "IP::World database is up-to-date\n";
 }
+if (!$dual_out && $proxy && $proxy ne $orig_proxy) {
+  # save proxy info
+  if ($testing) {
+    Module::Build::ConfigData->set_config(proxy => xorString($proxy, $latestMod));
+    ##### check this
+    my $cdfn = "${dd}IP/World/ConfigData.pm";
+    chmod(0664, $cdfn) or die "Can't make $cdfn writable: $!";
+    Module::Build::ConfigData->write();
+    chmod(0444, $cdfn) or die "Can't make $cdfn read-only: $!";
+  } else {
+    IP::World::ConfigData->set_config(proxy => xorString($proxy, $latestMod));
+    ##### check this
+    my $cdfn = "${dd}IP/World/ConfigData.pm";
+    chmod(0664, $cdfn) or die "Can't make $cdfn writable: $!";
+    IP::World::ConfigData->write();
+    chmod(0444, $cdfn) or die "Can't make $cdfn read-only: $!";
+} }
+#### end of main, start of subs ####
 
 # make a 32-bit packed value
 sub pack32 {
@@ -271,14 +401,12 @@ sub pack32 {
   if (unpack('N', $s) == $_[1]) {return substr($s, -4)}
   return substr($s, 0, 4);
 }
-
 # output a word to the output file(s)
 sub out {
     print DAT   pack32($mainpack, $_[0]);
   if ($dual_out) {
     print DATBE pack32('N',       $_[0]);
 } }
-
 # read a line from a source file
 sub getLine {
   my ($i) = @_;
@@ -290,13 +418,16 @@ sub getLine {
 
     # check the overall format of the line
     if ((@f[0..3], @l[0..3], $start[$i], $last[$i], $cc[$i]) =
-        /^"(\d+)\.(\d+)\.(\d+)\.(\d+)","(\d+)\.(\d+)\.(\d+)\.(\d+)","(\d+)","(\d+)","(..)",/) {
+      /^"(\d+)\.(\d+)\.(\d+)\.(\d+)","(\d+)\.(\d+)\.(\d+)\.(\d+)","(\d+)","(\d+)","(..)",/
+      ) {
 
       # ok: check the range of the IP address subfields
       for ($j = 0; $j < 4; $j++) {
         if ($f[$j] > 255
-         || $l[$j] > 255) {warn "text IP address error at line $lines[$i] of $FNS[$i]"; next LINE}
-      }
+         || $l[$j] > 255) {
+          warn "text IP address error at line $lines[$i] of $FNS[$i]";
+          next LINE;
+      } }
       if ($start[$i] != ($f[0]<<24 | $f[1]<<16 | $f[2]<<8 | $f[3])
        || $last[$i]  != ($l[0]<<24 | $l[1]<<16 | $l[2]<<8 | $l[3])) {
         warn "text and numeric IP don't match at line $lines[$i] of $FNS[$i]";
@@ -304,7 +435,8 @@ sub getLine {
         warn "starting IP > ending IPmatch at line $lines[$i] of $FNS[$i]";
       } elsif ($start[$i] <= $prevLast[$i]) {
         warn "IP addresses out of order at line $lines[$i] of $FNS[$i]";
-      } elsif ($cc[$i] =~ /[A-Z][A-Z]/) {  # lines with non-UC-alpha codes are quietly ignored
+        # lines with non-UC-alpha codes are quietly ignored
+      } elsif ($cc[$i] =~ /[A-Z][A-Z]/) {
         # it's a good record!
         $prevLast[$i] = $last[$i];
         return;
@@ -319,3 +451,37 @@ sub getLine {
     }
     $running = 0;
 } }
+# return whether a proxy contains a username and password
+sub proxy_complete {
+  my ($proxy) = @_;
+  return $proxy
+      && $proxy =~ m'//[^:]+:[^@]+@';
+}
+# take care of phony 500 response if we have no proxy
+sub check_resp {
+  my ($ua, $resp) = @_;
+  if ($resp->code == HTTP_INTERNAL_SERVER_ERROR
+   && $resp->message =~ /^Can't connect.+Bad hostname/) {
+    # looks like there's a proxy that we haven't covered
+    # the only possible means to find the proxy is via a .pac file
+    #  from a browser
+    print STDERR "Please wait, we're searching for the name of your proxy...";
+    my $ourProxy;
+    $_[0]->proxy('http_proxy', $ourProxy);
+    return 1;
+  }
+}
+# merge two proxy strings, and/or stick in a username and password
+sub proxy_merge {
+  my ($dest_proxy, $src_proxy, $u, $pw) = @_;
+  if (!$dest_proxy && $src_proxy) {$_[0] = $src_proxy}
+  if ($u && $pw) {$_[0] =~ s"//([^:]+:[^@]+\@)?"//$u:$pw\@"}
+}
+# enclusive-OR a numeric key with a string
+sub xorString {
+  my ($str, $numKey) = @_;
+  if (!$str || !$numKey) {return ''}
+  my $key = pack 'N', $numKey;
+  while (length($str) > length($key)) {$key .= $key}
+  return $str ^ substr($key, 0, length($str));
+}

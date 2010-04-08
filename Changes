@@ -1,5 +1,19 @@
 Revision history for IP::World
 
+0.3   Apr 7 2010
+      * Added some proxy handling to maint_ip_world_db.  Future 
+        versions will use a separate module for proxy handling.
+      * Moved most of sub process_dat_files out of Build.PL, into 
+        IP/World/Builder.pm (known in perl as IP:World::Builder).
+      * Moved 'use Probe::Perl' from test 0 to Build.PL.  Ensures 
+        that the automatic execution of maint_ip_world_db during the 
+        install phase happens under the perl used for the build.
+      * Changed name of PERLIO pointer from IN.  IN had a conflict 
+        with something predefined on testers' Win32 systems.
+      * Split former DASD mode 2 into mode 2 using C library I/O
+        and mode 3 using Perl I/O.  Perl 5.10.1 seems to have slow 
+        Perl I/O.
+
 0.2   Feb 22 2010
       * Fixed further problem in which the DESTROY function after 
         new(1) on systems without the Mmap feature would do the wrong 
@@ -12,22 +26,20 @@ Revision history for IP::World
       * Fixed problem wherein C compiler name was compound.  Thanks 
         to Stefan Rezic.
       * New included database, reflecting Feb update by WIPmania.
-      * Minuscule improvement in script/maint_ip_world_db, in avoiding 
+      * Minuscule improvement in maint_ip_world_db, in avoiding 
         creation of a root-owned file in blib.
 
 0.17  Feb 19 2010
       * Provided empty string as the 2nd (default) operand to the
         prompt() call in Build.PL, so that smoke-testers won't die
         with an UNKNOWN result.
-      * Moved the execution of script/maint_ip_world_db from the 
-        build (code) phase to the install phase.  Main advantage is
-        that tests will use an included database and so will not be 
-        subject to errors due to updating of the database by 
-        script/maint_ip_world_db.
-      * Improved script/maint_ip_world_db to use a '.tmp'file for its
-        output, then rename the extensions .dat->.bak, then .tmp->.dat.  
-        This prevents destruction of the database by a run that 
-        encounters an error.
+      * Moved the execution of maint_ip_world_db from the build (code) 
+        phase to the install phase.  Main advantage is that tests 
+        will use an included database and so will not be subject to 
+        errors due to updating of the database by maint_ip_world_db.
+      * Improved maint_ip_world_db to use a '.tmp' file for its output, 
+        then rename .dat->.bak, then .tmp->.dat.  This prevents 
+        destruction of the database by a run that encounters an error.
       * Added Probe::Perl to get the path to the current perl in 
         t/0check_scripts.t
       * Changed t/0check_scripts.t to do a perl check of 

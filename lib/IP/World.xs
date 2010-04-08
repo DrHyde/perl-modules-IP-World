@@ -8,21 +8,25 @@ extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-#include "ppport.h"
 #ifdef __cplusplus
 }
 #endif
 
 #if U32SIZE != 4
-#error IP::World can only be run on a system in which the U32 type is 4 bytes long
+#error IP::World can only be run on a system IPW which the U32 type is 4 bytes long
 #endif
 
 typedef unsigned char uc;
 
 typedef struct {
-    char *addr;
+    char   *addr;
+    union {
+#ifdef USE_PERLIO
+      PerlIO *p;
+#endif
+      FILE   *f;
+    } io;
     UV   entries;
-    PerlIO *IN;
     U32  mode;
 } wip_self;
 
@@ -34,22 +38,30 @@ SV *
 allocNew(filepath, fileLen, mode=0)
     const char *filepath
     STRLEN fileLen
-    int mode
+    unsigned mode
     PREINIT:
         wip_self self;
-        UV readLen;
-        PerlIO *IN;
+        int readLen;
     CODE:
         /* XS part of IP::World->new
             allocate a block of memory and fill it from the ipworld.dat file */
-        IN = PerlIO_open(filepath, "r");
-        if (!IN) croak("Can't open %s: %s", filepath, strerror(errno));
+        if (mode > 3) croak("operand of IP::World::new = %d, should be 0-3", mode);
+#ifdef USE_PERLIO
+        if (mode != 2) self.io.p = PerlIO_open(filepath, "r");
+        else
+#endif
+        self.io.f = fopen(filepath, "r");
+        if (!self.io.f) croak("Can't open %s: %s", filepath, strerror(errno));
         self.mode = mode;
-#ifdef MMAPOK
+#ifdef HAS_MMAP
 #include <sys/mman.h>
         if (mode == 1) {
             /* experimental feature: use mmap rather than read */
-            int fd = PerlIO_fileno(IN);
+#ifdef USE_PERLIO
+            int fd = PerlIO_fileno(self.io.p);
+#else
+            int fd = fileno(self.io.f);
+#endif
             self.addr = (char *)mmap(0, fileLen, PROT_READ, MAP_SHARED, fd, 0);
             if (self.addr == MAP_FAILED) 
                 croak ("mmap failed on %s: %s\n", filepath, strerror(errno));
@@ -60,15 +72,24 @@ allocNew(filepath, fileLen, mode=0)
             Newx(self.addr, fileLen, char);
             if (!self.addr) croak ("memory allocation for %s failed", filepath);
             /* read the data from the .dat file into the new block */
-            readLen = PerlIO_read(IN, self.addr, fileLen);
+#ifdef USE_PERLIO
+            readLen = PerlIO_read(self.io.p, self.addr, fileLen);
+#else
+            readLen = fread(self.addr, 1, fileLen, self.io.f);
+#endif
             if (readLen < 0) croak("read from %s failed: %s", filepath, strerror(errno));
             if (readLen != fileLen) 
-                croak("should have read %d bytes from %s, actually read %u", 
+                croak("should have read %d bytes from %s, actually read %d", 
                       fileLen, filepath, readLen);
+            self.mode = 0;
         }
         /* all is well */
-        if (mode < 2) PerlIO_close(IN);
-        else self.IN = IN;
+        if (mode < 2) 
+#ifdef USE_PERLIO
+                      PerlIO_close(self.io.p);
+#else
+                      fclose(self.io.f);
+#endif
         
         /* For each entry there is a 4 byte address plus a 10 bit country code.
              At 3 codes/word, the number of entries = 3/16 * the number of bytes */
@@ -96,7 +117,7 @@ getcc(self_ref, ip_sv)
         U32 word;
         char c[] = "**", *ret = c;
     CODE:
-        /* $new_obj->getcc is just in XS/C
+        /* $new_obj->getcc is just IPW XS/C
            check that self_ref is defined ref; dref it; check len; copy to self */
         len = 0;
         if (sv_isobject(self_ref)) {
@@ -117,11 +138,12 @@ getcc(self_ref, ip_sv)
         else if (len != 4) goto set_retval;
         /* if necessary, convert network order (big-endian) to native endianism */
         ip = ((uc)s[0] << 24) + ((uc)s[1] << 16) + ((uc)s[2] << 8) + (uc)s[3];
+
         /* binary-search the IP table */
-        ips = (U32 *)self.addr;
         top = self.entries;
         if (self.mode < 2) {
-            /* in-memory mode */
+            /* memory mode */
+            ips = (U32 *)self.addr;
             while (bottom < top-1) {
                 /* compare ip to the table entry halfway between top and bottom */
                 i = (bottom + top) >> 1;
@@ -136,13 +158,31 @@ getcc(self_ref, ip_sv)
             while (bottom < top-1) {
                 /* compare ip to the table entry halfway between top and bottom */
                 i = (bottom + top) >> 1;
-                PerlIO_seek(self.IN, i<<2, 0);
-                PerlIO_read(self.IN, &word, 4);
+#ifdef USE_PERLIO
+                if (self.mode == 3) {
+                    PerlIO_seek(self.io.p, i<<2, 0);
+                    PerlIO_read(self.io.p, &word, 4);
+                } else {
+#endif
+                    fseek(self.io.f, i<<2, 0);
+                    fread(&word, 4, 1, self.io.f);
+#ifdef USE_PERLIO
+                }
+#endif  
                 if (ip < word) top = i;
                 else bottom = i;
             }
-            PerlIO_seek(self.IN, (self.entries + bottom/3)<<2, 0);
-            PerlIO_read(self.IN, &word, 4);
+#ifdef USE_PERLIO
+            if (self.mode == 3) {
+                PerlIO_seek(self.io.p, (self.entries + bottom/3)<<2, 0);
+                PerlIO_read(self.io.p, &word, 4);
+            } else {
+#endif
+                fseek(self.io.f, (self.entries + bottom/3)<<2, 0);
+                fread(&word, 4, 1, self.io.f);
+#ifdef USE_PERLIO
+            }
+#endif  
         }
         switch (bottom % 3) {
           case 0:  word >>= 20; break;
@@ -179,9 +219,14 @@ DESTROY(self_ref)
         if (len != sizeof(wip_self))
             croak("automatic 'self' operand to DESTROY is not of correct type"); 
         memcpy (&self, s, sizeof(wip_self));
-#ifdef MMAPOK
+#ifdef HAS_MMAP
         if (self.mode == 1) munmap((caddr_t)self.addr, (size_t)((self.entries<<4)/3));
         else 
 #endif
         if (self.mode < 2) Safefree(self.addr);
-        else PerlIO_close(self.IN);
+        else 
+#ifdef USE_PERLIO
+        if (self.mode == 3) PerlIO_close(self.io.p);
+        else
+#endif
+        fclose(self.io.f);

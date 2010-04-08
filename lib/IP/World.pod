@@ -34,14 +34,21 @@ I<$mode> selects the operating mode:
 
 =over 4
 
-=item * 0: fast, keeps data in memory (643 KB at initial release, but 
+=item 0: fast, keeps data in memory (643 KB at initial release, but 
 who cares these days?)
 
-=item * 1: Mmap, keeps data in Mmap memory, may reduce total memory 
+=item 1: Mmap, keeps data in Mmap memory, may reduce total memory 
 requirement of sibling processes. If your system doesn't support Mmap, 
 1 operates like 0.
 
-=item * 2: tiny, slow but saves memory by searching the database on disk
+=item 2: tiny, slow but saves memory by searching the database on disk 
+         using traditional C library I/O calls.
+
+=item 3: tiny PerlIO, slow but saves memory by searching the 
+         database on disk using Perl I/O calls.  If your system 
+         doesn't support Perl I/O, 3 works like 2.  If it does, 
+         performance may differ between this option and the preceding 
+         one.
 
 =back
 
@@ -115,7 +122,7 @@ Compares the performance of IP::World with that of similar modules.
 I<ip-benchmark> showed the following results in one run on the 
 author's server:
 
-  Module                   Total uS  uS/call  % unknown/private
+  Module                   Total uS  uS/call  % not covered
   IP::Country:Fast           128174    31.29  30
   IP::Country:Fast packed     98741    24.11  30
   Geo::IP Standard            54518    13.31  32
@@ -130,6 +137,25 @@ author's server:
 I<packed> indicates conversion of a packed 32-bit IP address rather
 than a text address.  I<ip-benchmark> uses the same set of random 
 IP addresses for all of the modules in each execution.
+
+=head2 TERMINOLOGY
+
+Our scripts I<ip_world_dump> and I<ip-benchmark> both use the term 
+'not covered' to describe IP addresses that do not map to country 
+codes.  These fall into 4 categories:
+
+=over 4
+
+=item addresses that were once used but are no longer used,
+
+=item addresses that are assigned for private use,
+
+=item addresses that are not assigned/allocated, and
+
+=item addresses that were assigned/allocated in the last month 
+      or two, that our data sources do not yet include. 
+
+=back
 
 =head1 INSTALLATION
 
