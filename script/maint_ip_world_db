@@ -147,11 +147,11 @@ if ($proxy) {
 my $latestMod = 0;
 if ($replfn_exists) {
   for my $url (@URLS) {
-#    my $trying = 1;
-#    while ($trying) {
+    my $trying = 1;
+    while ($trying) {
       $resp = $ua->head($url);
-#      $trying = check_code($resp);
-#    }
+      $trying = check_resp($ua, $resp);
+    }
     if ($resp->code != HTTP_OK) {
       die "Source file $url could not be found: ".status_message($resp->code);
     }
@@ -187,11 +187,11 @@ if (!$replfn_exists
     my $fn = $dd.$1;
 
     # read the source archives from the internet
-#    my $trying = 1;
-#    while ($trying) {
+    my $trying = 1;
+    while ($trying) {
       $resp = $ua->get($URLS[$i], ':content_file' => $fn);
-#      $trying = check_code($resp);
-#    }
+      $trying = check_resp($ua, $resp);
+    }
     if ($resp->code != HTTP_OK) {
       die "Source file $URLS[$i] could not be fetched: "
           . status_message($resp->code);

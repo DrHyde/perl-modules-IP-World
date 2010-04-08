@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #if U32SIZE != 4
-#error IP::World can only be run on a system IPW which the U32 type is 4 bytes long
+#error IP::World can only be run on a system in which the U32 type is 4 bytes long
 #endif
 
 typedef unsigned char uc;
@@ -117,7 +117,7 @@ getcc(self_ref, ip_sv)
         U32 word;
         char c[] = "**", *ret = c;
     CODE:
-        /* $new_obj->getcc is just IPW XS/C
+        /* $new_obj->getcc is only in XS/C
            check that self_ref is defined ref; dref it; check len; copy to self */
         len = 0;
         if (sv_isobject(self_ref)) {
