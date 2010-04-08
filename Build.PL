@@ -13,8 +13,8 @@ my $errwarn = qr/(^|\b)(warning|error)(\b|$)/im;
 # test which cc optimize flags are allowed
 my $opt;
 # move '#' from following line to next line for debugging 
-for my $s ('-g') {  
-# for my $s ('-O3', '-O2', '-O') {
+# for my $s ('-g') {
+for my $s ('-O3', '-O2', '-O') {
     if (!$s) {last}
     $_ = `$cc -c $s test.c 2>&1`;
     if (!/$errwarn/) {
