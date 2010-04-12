@@ -35,10 +35,10 @@ ZZZZ
 my $build = $class->new(
     build_requires     => {'ExtUtils::CBuilder' => 0,
                            'File::Copy'         => 0,
-                           'Module::Build'      => '0.36',
                            'Test::More'         => 0},
     configure_requires => {'Config'             => 0,
                            'CPAN::DistnameInfo' => 0,
+                           'Module::Build'      => '0.3607',
                            'Probe::Perl'        => 0},
     dist_author        => 'Craig MacKenna <craig@animalhead.com>',
     dynamic_config     => 1,

@@ -95,7 +95,7 @@ source.  If there is, it downloads the data and builds a new database.
 
 You can run this manually to check for a new database, or (on a
 server or other 24/7 system) you can schedule it for automatic
-execution at a non-busy time each day.
+execution at a non-busy time.
 
 In either case you should run I<maint_ip_world_db> with privilege to
 rewrite the database file.  For Unix/Linux systems this means
@@ -122,17 +122,19 @@ Compares the performance of IP::World with that of similar modules.
 I<ip-benchmark> showed the following results in one run on the 
 author's server:
 
-  Module                   Total uS  uS/call  % not covered
-  IP::Country:Fast           128174    31.29  30
-  IP::Country:Fast packed     98741    24.11  30
-  Geo::IP Standard            54518    13.31  32
-  Geo::IP Memory Cache        23827     5.82  32
-  IP::World fast               8690     2.12  28
-  IP::World fast   packed      6850     1.67  28
-  IP::World mmap               8801     2.15  28
-  IP::World mmap   packed      6870     1.68  28
-  IP::World tiny             520360   127.04  28
-  IP::World tiny   packed    519122   126.74  28
+  Module                       Total uS  uS/call  % not covered
+  Geo::IP Standard               281982    68.84  32
+  Geo::IP Memory Cache            25626     6.26  32
+  IP::Country::Fast              131887    32.20  29
+  IP::Country::Fast    packed    101378    24.75  29
+  IP::World fast                   9311     2.27  27
+  IP::World fast       packed      6965     1.70  27
+  IP::World mmap                   9084     2.22  27
+  IP::World mmap       packed      7023     1.71  27
+  IP::World tinyC                207054    50.55  27
+  IP::World tinyC      packed    210123    51.30  27
+  IP::World tinyPerl             654634   159.82  27
+  IP::World tinyPerl   packed    554801   135.45  27
 
 I<packed> indicates conversion of a packed 32-bit IP address rather
 than a text address.  I<ip-benchmark> uses the same set of random 

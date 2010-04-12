@@ -20,22 +20,26 @@ is ($ipw->getcc(undef), '**', "getcc(undef) should return **");
 # test 3: getcc('') should return **
 is ($ipw->getcc(''), '**', "getcc('') should return **");
 
+# somewhere in the world there is a test system 
+#  that compiles unquoted numeric constants to packed 32 bits
+#  for its sake we quote the following 5 numeric constants
+
 # test 4: getcc(0) should return **
-is ($ipw->getcc(0), '**', "getcc(0) should return **");
+is ($ipw->getcc('0'), '**', "getcc(0) should return **");
 
 # test 5: getcc(999) should return **
-is ($ipw->getcc(999), '**', "getcc(999) should return **");
+is ($ipw->getcc('999'), '**', "getcc(999) should return **");
 
 # test 6: getcc(1000) should return ??
 # string 1000 is equivalent to '49.0.0.0' which is not assigned
-is ($ipw->getcc(1000), '??', "getcc(1000) should return ??");
+is ($ipw->getcc('1000'), '??', "getcc(1000) should return ??");
 
 # test 7: getcc(9999) should return EU
 # string 9999 is equivalent to '57.57.57.57'
-is ($ipw->getcc(9999), 'EU', "getcc(9999) should return EU");
+is ($ipw->getcc('9999'), 'EU', "getcc(9999) should return EU");
 
 # test 8: getcc(10000) should return **
-is ($ipw->getcc(10000), '**', "getcc(10000) should return **");
+is ($ipw->getcc('10000'), '**', "getcc(10000) should return **");
 
 # tests 9-??: test the IP addresses after the __END__ statement below
 my $line = 0;

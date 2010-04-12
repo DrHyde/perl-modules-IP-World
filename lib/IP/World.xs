@@ -30,6 +30,30 @@ typedef struct {
     U32  mode;
 } wip_self;
 
+#ifndef inet_pton
+/* some windows platforms don't define inet_pton */
+int inet_pton(int af, const char *src, void *dst) {
+    unsigned parts = 0;
+    int part = -1;
+    char c;
+
+    while (c = *src++) {
+        if (c == '.') {
+            if (++parts > 3 || part < 0) return 0;
+            *(unsigned char *)dst++ = (unsigned char)part;
+            part = -1;
+        } else if ((c -= '0') >= 0
+                && c <= 9) {
+            if (part < 0) part = c;
+            else if ((part = part*10 + c) > 255) return 0;
+        } else return 0;
+    }
+    if (part < 0 || parts < 3) return 0;
+    *(unsigned char *)dst = (unsigned char)part;
+    return 1;
+}
+#endif
+
 MODULE = IP::World       PACKAGE = IP::World
 
 PROTOTYPES: DISABLE
@@ -69,7 +93,11 @@ allocNew(filepath, fileLen, mode=0)
 #endif
         if (mode < 2) {
             /* malloc a block of size fileLen */
+#if (PERL_VERSION==8 && PERL_SUBVERSION > 7) || (PERL_VERSION==9 && PERL_SUBVERSION > 2) || PERL_VERSION > 9
             Newx(self.addr, fileLen, char);
+#else
+            New(0, self.addr, fileLen, char);
+#endif
             if (!self.addr) croak ("memory allocation for %s failed", filepath);
             /* read the data from the .dat file into the new block */
 #ifdef USE_PERLIO
@@ -93,8 +121,7 @@ allocNew(filepath, fileLen, mode=0)
         
         /* For each entry there is a 4 byte address plus a 10 bit country code.
              At 3 codes/word, the number of entries = 3/16 * the number of bytes */
-        self.entries = fileLen*3 >> 4;
-        
+        self.entries = fileLen*3 >> 4;        
         /* warn("%s length %d -> %d entries", filepath, fileLen, self.entries); */
         RETVAL = newSVpv((const char *)(&self), sizeof(wip_self));   
     OUTPUT:
@@ -111,8 +138,7 @@ getcc(self_ref, ip_sv)
         wip_self self;
         I32 flgs;
         struct in_addr netip;
-        U32 ip;
-        register U32 *ips;
+        register U32 ip, *ips;
         register UV i, bottom = 0, top;
         U32 word;
         char c[] = "**", *ret = c;
@@ -137,8 +163,7 @@ getcc(self_ref, ip_sv)
         if (inet_pton(AF_INET, s, (void *)&netip) > 0) s = (char *)&netip; 
         else if (len != 4) goto set_retval;
         /* if necessary, convert network order (big-endian) to native endianism */
-        ip = ((uc)s[0] << 24) + ((uc)s[1] << 16) + ((uc)s[2] << 8) + (uc)s[3];
-
+        ip = ((uc)s[0] << 24) + ((uc)s[1] << 16) + ((uc)s[2] << 8) + (uc)s[3];        
         /* binary-search the IP table */
         top = self.entries;
         if (self.mode < 2) {

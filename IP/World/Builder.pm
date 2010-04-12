@@ -35,11 +35,14 @@ sub do_dat {
     close DAT;
     $src_mod = unpack 'N', $src_mod;
 
-        # set the mod times of the included files (in case someone copies)
+    # set the mod times of the included files (in case someone copies)
+    # Windows requires write permission
+    my $WIN = $^O =~ /(ms|cyg)win/i;
     for ('be', 'le') {
       $fn = "$srcdir/ipworld.$_";
-      utime($src_mod, $src_mod, $fn)==1
-        or die "Can't set mod time of $fn: $!";
+      $WIN and      chmod(0664, $fn) || die "Can't change permissions on $fn: $!";
+      utime($src_mod, $src_mod, $fn) or die "Can't set mod time of $fn: $!";
+      $WIN and      chmod(0444, $fn) || die "Can't change permissions on $fn: $!";
     }
     # copy database if necessary
     if (!-e $dest
@@ -54,7 +57,7 @@ sub do_dat {
         or die "Can't set mod time of $dest";
       print "Copying $src -> $dest\n";
     }
-    # hopefullly temporary (if the M::B guys include docs in test)
+    # hopefully temporary (if the M::B guys include docs in test)
     if ($invoked eq 'test') {$self->depends_on('docs')}
   }
   if ($invoked eq 'install') {

@@ -1,12 +1,12 @@
 #!/usr/bin/perl
-
 use IP::World;
 my $ipw = IP::World->new(0);
 
 sub showCountryCode {
   $_ = shift;
   if ( /((\d+)\.(\d+)\.(\d+)\.(\d+))/ ) {
-    print "$1 -> $ipw->getcc($1)\n";
+    my $cc = $ipw->getcc($1);
+    print "$1 -> $cc\n";
   }
 }
 

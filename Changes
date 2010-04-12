@@ -1,48 +1,64 @@
 Revision history for IP::World
 
-0.3   Apr 7 2010
-      * Added some proxy handling to maint_ip_world_db.  Future 
+0.33  Apr 12 2010
+      * Removed all proxy handling except LWP::UserAgent env_proxy
+        from maint_ip_world_db.  It was too ugly to fix.  A new module 
+        will handle proxies in a future version.
+      * Reconciled New vs. Newx call for perls < 5.8.8.
+      * Added an implementation of inet_pton for Windows systems that
+        don't include it.  It's only included/used on such systems.
+      * Revised IP::World::Builder to make databases writable before
+        changing their mod dates, on Windows.
+      * Revised tests 4-8 in each test file to use quoted numeric
+        constants.  This accomodates a weird cygwin test box that
+        seemed to compile unquoted numeric constants as packed 32-bit 
+        values(?).
+      * Fixed a little problem in the ip2country script which was 
+        contributed by a guy at WorldIP.
+
+0.32  Apr 7 2010
+      * Added some proxy handling to maint_ip_world_db.  Future
         versions will use a separate module for proxy handling.
-      * Moved most of sub process_dat_files out of Build.PL, into 
+      * Moved most of sub process_dat_files out of Build.PL, into
         IP/World/Builder.pm (known in perl as IP:World::Builder).
-      * Moved 'use Probe::Perl' from test 0 to Build.PL.  Ensures 
-        that the automatic execution of maint_ip_world_db during the 
+      * Moved 'use Probe::Perl' from test 0 to Build.PL.  Ensures
+        that the automatic execution of maint_ip_world_db during the
         install phase happens under the perl used for the build.
-      * Changed name of PERLIO pointer from IN.  IN had a conflict 
+      * Changed name of PERLIO pointer from IN.  IN had a conflict
         with something predefined on testers' Win32 systems.
       * Split former DASD mode 2 into mode 2 using C library I/O
-        and mode 3 using Perl I/O.  Perl 5.10.1 seems to have slow 
+        and mode 3 using Perl I/O.  Perl 5.10.1 seems to have slow
         Perl I/O.
 
 0.2   Feb 22 2010
-      * Fixed further problem in which the DESTROY function after 
-        new(1) on systems without the Mmap feature would do the wrong 
+      * Fixed further problem in which the DESTROY function after
+        new(1) on systems without the Mmap feature would do the wrong
         thing, resulting in segment-faults.
 
 0.18  Feb 21 2010
       * Fixed problem in which new(1) on systems without Mmap feature
         wouldn't allocate memory, resulting in segment-faults on a
         subsequent getcc or DESTROY operation.
-      * Fixed problem wherein C compiler name was compound.  Thanks 
+      * Fixed problem wherein C compiler name was compound.  Thanks
         to Stefan Rezic.
       * New included database, reflecting Feb update by WIPmania.
-      * Minuscule improvement in maint_ip_world_db, in avoiding 
+      * Minuscule improvement in maint_ip_world_db, in avoiding
         creation of a root-owned file in blib.
 
 0.17  Feb 19 2010
       * Provided empty string as the 2nd (default) operand to the
         prompt() call in Build.PL, so that smoke-testers won't die
         with an UNKNOWN result.
-      * Moved the execution of maint_ip_world_db from the build (code) 
-        phase to the install phase.  Main advantage is that tests 
-        will use an included database and so will not be subject to 
+      * Moved the execution of maint_ip_world_db from the build (code)
+        phase to the install phase.  Main advantage is that tests
+        will use an included database and so will not be subject to
         errors due to updating of the database by maint_ip_world_db.
-      * Improved maint_ip_world_db to use a '.tmp' file for its output, 
-        then rename .dat->.bak, then .tmp->.dat.  This prevents 
+      * Improved maint_ip_world_db to use a '.tmp' file for its output,
+        then rename .dat->.bak, then .tmp->.dat.  This prevents
         destruction of the database by a run that encounters an error.
-      * Added Probe::Perl to get the path to the current perl in 
+      * Added Probe::Perl to get the path to the current perl in
         t/0check_scripts.t
-      * Changed t/0check_scripts.t to do a perl check of 
+      * Changed t/0check_scripts.t to do a perl check of
         script/maint_ip_world_db, rather than a results check.
       * Added a way to preserve the mod time of the included databases
         through archiving and unpacking.

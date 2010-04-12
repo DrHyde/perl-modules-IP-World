@@ -51,7 +51,7 @@ INSTALLATION
 
     $ cd IP-World-n.n
     $ perl Build.PL
-    $ ./Build make
+    $ ./Build
     $ ./Build test
 
     Assuming those steps don't show any problems:

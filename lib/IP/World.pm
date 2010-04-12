@@ -1,8 +1,8 @@
 package IP::World;
 
 # World.pm - the Perl part of the IP::World module
-#   this module maps from IP addresses to country codes, 
-#   using the free WorldIP database (wipmania.com)
+#   this module maps from IP addresses to country codes, using the free
+#   WorldIP (wipmania.com) and GeoLite Country (maxmind.com) databases
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ require DynaLoader;
 # Exporter is not needed because we're object-oriented
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '0.32';
+our $VERSION = '0.33';
 
 sub new {
     my ($pkg, $mode) = @_;
@@ -29,7 +29,7 @@ sub new {
     # call the C (XS) part of new to read the file into memory
     my $self = allocNew ($filepath, $fileLen, $mode);
     
-    # bless the returned value from allocNew to be an object, and return it to the caller
+    # bless the value from allocNew to be an object, and return it
     bless (\$self, $pkg);
     return \$self;
 }

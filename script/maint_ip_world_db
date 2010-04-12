@@ -1,6 +1,7 @@
 #!/usr/local/bin/perl
 
-# program to get the WorldIP abd GeoIP databases and build a composite file for IP::World
+# program to get the WorldIP and GeoIP databases 
+#  and build a composite file for IP::World
 
 use strict;
 use warnings;
@@ -9,57 +10,6 @@ use HTTP::Status qw(:constants :is status_message);
 use URI;
 use File::ShareDir qw(module_dir);
 use constant FN => 'ipworld';
-{
-  package ourLWP;
-  our @ISA = qw(LWP::UserAgent);
-  our $gave;
-
-  sub new {
-    return LWP::UserAgent::new(@_);
-  }
-  # ask for username and password
-  sub get_basic_credentials {
-    my ($self, $realm, $proxy, $isproxy )= @_;
-    # should we compare this proxy with the one in main?
-    my $host = $main::proxy->host;
-    $isproxy or die
-      "data source $realm at $host asked for login (it shouldn't!)";
-
-    # if we think we already know the user and PW, return them to LWP::UA
-    if ($main::u
-     && $main::pw
-     && !$gave) {
-       $gave = 1;
-       return ($main::u, $main::pw)
-    }
-    if ($main::testing) {
-      # we are testing (called with a -t switch)
-      # therefore we have to let our parent ask for user & PW
-      print "PROXY\t$realm\t$host\n";
-      exit;
-
-    } elsif (-t) {
-      # almost verbatim from Gyle Aas
-      print STDERR "Enter username for proxy $realm at $host: ";
-      $main::u = <STDIN>;
-      chomp ($main::u);
-      return (undef, undef) unless length $main::u;
-
-      print STDERR "Password: ";
-      system ("stty -echo");
-      $main::pw = <STDIN>;
-      system ("stty echo");
-      print STDERR "\n";  # because we disabled echo
-      chomp ($main::pw);
-      return ($main::u, $main::pw);
-    } else {
-      # we're not testing but we're run unattended
-      return (undef, undef)
-  } }
-  1;
-}
-# globals that are visible to ourLWP above
-our ($testing, $proxy, $u, $pw);
 
 # online archives
 my @URLS = ("http://static.wipmania.com/static/worldip.en.text.zip",
@@ -71,7 +21,7 @@ my @FNS = ("worldip.en.txt",
 my @moname = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 my $mainpack = 'L';
-my ($dual_out, $resp, $dd);
+my ($testing, $dual_out, $resp, $dd);
 
 # look for options (-testing, -dual_out, -user "user", -p "password")
 my $i=0;
@@ -85,10 +35,6 @@ for (@ARGV) {
     $dd = 'lib/auto/IP/World/';
     if (!-d $dd) {$dd = ''}
     $mainpack = 'V';
-  } elsif (/^--?u/) {
-    ($u  = $ARGV[$i+1]) =~ s/^"(.+?)"$/$1/;
-  } elsif (/^--?p/) {
-    ($pw = $ARGV[$i+1]) =~ s/^"(.+?)"$/$1/;
   }
   $i++;
 }
@@ -116,49 +62,19 @@ if ($dual_out) {
   $outfn2 = $dd.FN.".".($replfn_exists ? 'tbe' : 'be');
 }
 # create the user-agent object via the package at the start of this file
-my $ua = ourLWP->new (timeout => 30);
+my $ua = LWP::UserAgent->new (timeout => 30);
 
-# see if we already know about a proxy
-if ($testing) {
-  eval "require Module::Build::ConfigData";
-  if ($@) {die "Can't load Module::Build::ConfigData: $@"}
-  $proxy = xorString(Module::Build::ConfigData->config('proxy'), $replMod);
-} else {
-  eval "require IP::World::ConfigData";
-  if ($@) {die "Can't load IP::World::ConfigData: $@"}
-  $proxy = xorString(    IP::World::ConfigData->config('proxy'), $replMod);
-}
-my $orig_proxy = $proxy;
-if (!proxy_complete($proxy)) {
-  proxy_merge ($proxy, $ENV{http_proxy});
-}
-if (!proxy_complete($proxy)) {
-  eval "require CPAN::Config";
-  if (!$@) {proxy_merge($proxy,
-                        $$CPAN::Config{http_proxy},
-                        $$CPAN::Config{proxy_user},
-                        $$CPAN::Config{proxy_pass})}
-}
-if ($proxy) {
-  # add ftp if/when we need it
-  $ua->proxy('http', $proxy);
-}
+# only proxy handling is via environment variables
+if ($ENV{http_proxy} || $ENV{HTTP_PROXY}) {$ua->env_proxy}
+
 # if we have a file already, get mod times of the data sources
 my $latestMod = 0;
 if ($replfn_exists) {
   for my $url (@URLS) {
-    my $trying = 1;
-    while ($trying) {
-      $resp = $ua->head($url);
-      $trying = check_resp($ua, $resp);
-    }
-    if ($resp->code != HTTP_OK) {
+    $resp = $ua->head($url);
+    if (!$resp->is_success) {
       die "Source file $url could not be found: ".status_message($resp->code);
     }
-    if ($u && $pw) {
-      proxy_merge ($proxy, '', $u, $pw);
-    }
-    $u = $pw = '';
     $_ = $resp->last_modified;
     if ($_ > $latestMod) {$latestMod = $_}
 } }
@@ -187,19 +103,11 @@ if (!$replfn_exists
     my $fn = $dd.$1;
 
     # read the source archives from the internet
-    my $trying = 1;
-    while ($trying) {
-      $resp = $ua->get($URLS[$i], ':content_file' => $fn);
-      $trying = check_resp($ua, $resp);
-    }
-    if ($resp->code != HTTP_OK) {
+    $resp = $ua->get($URLS[$i], ':content_file' => $fn);
+    if (!$resp->is_success) {
       die "Source file $URLS[$i] could not be fetched: "
           . status_message($resp->code);
     }
-    if ($u && $pw) {
-      proxy_merge ($proxy, '', $u, $pw);
-    }
-    $u = $pw = '';
     # maintain the latest mod time among the sources
     $_ = $resp->last_modified;
     if ($_ > $latestMod) {$latestMod = $_}
@@ -361,7 +269,7 @@ if (!$replfn_exists
       or die "Can't set permissions of $outfn2 to read-only: $!";
   }
   # if the user entered a command to run at this time, do so
-  # but not if we're just testing
+  #   but not if we're just testing
   if (!$testing
    && ($_ = IP::World::ConfigData->config('cmd'))) {system $_}
 
@@ -371,27 +279,10 @@ if (!$replfn_exists
   print "Wrote IP::World database".($dual_out && $dd ? " to $dd" : '')
         .", including ".(scalar(@ccs)-$unknowns)
         ." country blocks and $unknowns unknown blocks\n";
-  my $zzz = 0
+  # my $zzz = 0
 } else {
   print "IP::World database is up-to-date\n";
 }
-if (!$dual_out && $proxy && $proxy ne $orig_proxy) {
-  # save proxy info
-  if ($testing) {
-    Module::Build::ConfigData->set_config(proxy => xorString($proxy, $latestMod));
-    ##### check this
-    my $cdfn = "${dd}IP/World/ConfigData.pm";
-    chmod(0664, $cdfn) or die "Can't make $cdfn writable: $!";
-    Module::Build::ConfigData->write();
-    chmod(0444, $cdfn) or die "Can't make $cdfn read-only: $!";
-  } else {
-    IP::World::ConfigData->set_config(proxy => xorString($proxy, $latestMod));
-    ##### check this
-    my $cdfn = "${dd}IP/World/ConfigData.pm";
-    chmod(0664, $cdfn) or die "Can't make $cdfn writable: $!";
-    IP::World::ConfigData->write();
-    chmod(0444, $cdfn) or die "Can't make $cdfn read-only: $!";
-} }
 #### end of main, start of subs ####
 
 # make a 32-bit packed value
@@ -451,37 +342,3 @@ sub getLine {
     }
     $running = 0;
 } }
-# return whether a proxy contains a username and password
-sub proxy_complete {
-  my ($proxy) = @_;
-  return $proxy
-      && $proxy =~ m'//[^:]+:[^@]+@';
-}
-# take care of phony 500 response if we have no proxy
-sub check_resp {
-  my ($ua, $resp) = @_;
-  if ($resp->code == HTTP_INTERNAL_SERVER_ERROR
-   && $resp->message =~ /^Can't connect.+Bad hostname/) {
-    # looks like there's a proxy that we haven't covered
-    # the only possible means to find the proxy is via a .pac file
-    #  from a browser
-    print STDERR "Please wait, we're searching for the name of your proxy...";
-    my $ourProxy;
-    $_[0]->proxy('http_proxy', $ourProxy);
-    return 1;
-  }
-}
-# merge two proxy strings, and/or stick in a username and password
-sub proxy_merge {
-  my ($dest_proxy, $src_proxy, $u, $pw) = @_;
-  if (!$dest_proxy && $src_proxy) {$_[0] = $src_proxy}
-  if ($u && $pw) {$_[0] =~ s"//([^:]+:[^@]+\@)?"//$u:$pw\@"}
-}
-# enclusive-OR a numeric key with a string
-sub xorString {
-  my ($str, $numKey) = @_;
-  if (!$str || !$numKey) {return ''}
-  my $key = pack 'N', $numKey;
-  while (length($str) > length($key)) {$key .= $key}
-  return $str ^ substr($key, 0, length($str));
-}
