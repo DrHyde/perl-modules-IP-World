@@ -201,9 +201,8 @@ schedule I<maint_ip_world_db>.
 
 See L<http://search.cpan.org/perldoc%3FGeo::IP>
 
-This uses one of the two data sources that IP-World uses.  It can 
-also use MaxMind's licensed, fee-based databases that include 
-more data.
+This uses one of the two data sources that IP-World uses.  It can also 
+use MaxMind's licensed, fee-based databases that include more data.
 
 Unfortunately if you want this package to operate at the speeds 
 shown in L</PERFORMANCE>, you have to download a C library from 

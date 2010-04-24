@@ -1,0 +1,46 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.63.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It will check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+SHA1 3ffe071bb38fbecbf78d863b12dd8fb840387510 Build.PL
+SHA1 0a851033c46f5172be092a2c3875730f4f2ee32c Changes
+SHA1 4b670a9313bf158ab1c0ee7288ab2e97e17ac913 IP/World/Builder.pm
+SHA1 20a9e1c580187eb8a331bb2c5bd71f492d024d43 MANIFEST
+SHA1 0f27bdaf832174913f5f570f74af61fc1f76c440 META.yml
+SHA1 fb50a16e03684ffc71adfe2fc69fbfe4582bb79a README
+SHA1 260c1e49e73f03dc42137aa0c2498a6e28db994b lib/IP/World.pm
+SHA1 89b46e95e597695b6865814a442db7c5e195646a lib/IP/World.pod
+SHA1 ddbc1cbda3367580c67085db35dffcceb81bf18a lib/IP/World.xs
+SHA1 bc73b2eb434abc74c104fda09e1408b531927b04 lib/auto/IP/World/ipworld.be
+SHA1 b0c730bccaf35983689e77c304ae16f37dcf3e4c lib/auto/IP/World/ipworld.le
+SHA1 5394482c4dec6758416b6cf62f1e873d9692f581 lib/auto/IP/World/modtime.dat
+SHA1 02978eca00ec505d38cace1d31ebb218e700dbc4 script/ip2country
+SHA1 e356fbcdf247f5abc4099b066bddacab6c134b60 script/ip_cc_benchmark
+SHA1 f910c19507ca4eff4b2f7968a45fb2b30cdf02c1 script/ip_world_dump
+SHA1 8aa59dcea41090d4a746fd089027e694e10da4eb script/maint_ip_world_db
+SHA1 c9de14b0168a7285691ecd055291957244a9ed8a t/0check_scripts.t
+SHA1 b208269261e804f9455bba803770f99ea21233e7 t/1fast.t
+SHA1 67318dad36e6d53943918e56a5b6f7c55cc4db33 t/2mmap.t
+SHA1 16e2555b638a090ed3f52525340ca9aa077759ff t/3tinyC.t
+SHA1 856b45b6db59bd2e1b9a9b2210019a38707ef7dc t/4tinyPerl.t
+SHA1 bb9a7c25a29acbad7286948de7d748319535457e t/5pod.t
+SHA1 d61edf7b118d63d801ad0f080318591b3f57b1ec test.c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.11 (FreeBSD)
+
+iEYEARECAAYFAkvSSZ0ACgkQkU4d9qVtNVLQawCgj5qR9Dkl2GY7gJrAW16Y4bjo
+hq8AniTS+vwW+AnPdB+MFScuit8mMIzN
+=qLUR
+-----END PGP SIGNATURE-----

@@ -41,7 +41,7 @@ sub do_dat {
     for ('be', 'le') {
       $fn = "$srcdir/ipworld.$_";
       $WIN and      chmod(0664, $fn) || die "Can't change permissions on $fn: $!";
-      utime($src_mod, $src_mod, $fn) or die "Can't set mod time of $fn: $!";
+      utime($src_mod, $src_mod, $fn) || die "Can't set mod time of $fn: $!";
       $WIN and      chmod(0444, $fn) || die "Can't change permissions on $fn: $!";
     }
     # copy database if necessary
@@ -51,11 +51,11 @@ sub do_dat {
      && -s $src != -s $dest) {
 
       # copy the file
-      copy ($src, $dest)
-        or die "Can't copy $src to $dest: $!";
-      utime($src_mod, $src_mod, $dest)==1
-        or die "Can't set mod time of $dest";
       print "Copying $src -> $dest\n";
+      copy ($src, $dest)               || die "Can't copy $src to $dest: $!";
+      $WIN and      chmod(0664, $dest) || die "Can't change permissions on $dest: $!";
+      utime($src_mod, $src_mod, $dest) || die "Can't set mod time of $dest: $!";
+      $WIN and      chmod(0444, $dest) || die "Can't change permissions on $dest: $!";
     }
     # hopefully temporary (if the M::B guys include docs in test)
     if ($invoked eq 'test') {$self->depends_on('docs')}

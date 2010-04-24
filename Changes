@@ -1,5 +1,10 @@
 Revision history for IP::World
 
+0.34  Apr 23 2010
+      * Revised IP::World::Builder further make databases writable 
+        before changing their mod dates, on Windows.  Maybe someday 
+        this module will pass on Windows.
+
 0.33  Apr 12 2010
       * Removed all proxy handling except LWP::UserAgent env_proxy
         from maint_ip_world_db.  It was too ugly to fix.  A new module 

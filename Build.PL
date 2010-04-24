@@ -12,7 +12,7 @@ my $errwarn = qr/(^|\b)(warning|error)(\b|$)/im;
 
 # test which cc optimize flags are allowed
 my $opt;
-# move '#' from following line to next line for debugging 
+# move '#' from following line to next line for debugging
 # for my $s ('-g') {
 for my $s ('-O3', '-O2', '-O') {
     if (!$s) {last}
@@ -21,6 +21,7 @@ for my $s ('-O3', '-O2', '-O') {
         $opt = $s;
         last;
 }   }
+unlink('test.o');
 
 # derive a class from Module::Build that calls IP::World::Builder in each phase
 my $class = Module::Build->subclass(code => <<'ZZZZ');
@@ -51,10 +52,10 @@ my $build = $class->new(
                            'HTTP::Status'   => 0,
                            'Time::HiRes'    => 0},
     script_files        => 'script',
+    (sign               => 1),
 );
 # set the optimize code determined above for the C compiler
 if ($opt) {$build->config(optimize => $opt)}
-unlink('test.o');
 
 # this arranges for 'process_dat_files' during each Build step
 #   and thus maint_ip_world_db to be called during the install step
@@ -63,6 +64,7 @@ $build->add_build_element('dat');
 # ask whether the user wants maint_ip_world_db to run a command when the DB is updated
 my $cmd = $build->prompt("Should the DB-update utility run a command when the "
                        . "DB is updated?\nIf so enter it (if not just return):", "");
+
 # if so, store the command to run in the config_data structure(s)
 if ($cmd) {$build->config_data(cmd => $cmd)}
 
@@ -70,5 +72,5 @@ if ($cmd) {$build->config_data(cmd => $cmd)}
 my $perl = Probe::Perl->find_perl_interpreter();
 $build->config_data(perl => $perl);
 
-# make the Build file that we use to compile, test, and install 
+# make the Build file that we use to compile, test, and install
 $build->create_build_script;

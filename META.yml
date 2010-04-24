@@ -12,7 +12,7 @@ configure_requires:
   Module::Build: 0.3607
   Probe::Perl: 0
 dynamic_config: 1
-generated_by: 'Module::Build version 0.3603'
+generated_by: 'Module::Build version 0.3607'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -21,7 +21,7 @@ name: IP-World
 provides:
   IP::World:
     file: lib/IP/World.pm
-    version: 0.33
+    version: 0.34
 requires:
   Carp: 0
   File::ShareDir: 0
@@ -31,4 +31,4 @@ requires:
   perl: v5.7.3
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.33
+version: 0.34

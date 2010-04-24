@@ -21,3 +21,4 @@ t/3tinyC.t
 t/4tinyPerl.t
 t/5pod.t
 test.c
+SIGNATURE    Added here by Module::Build

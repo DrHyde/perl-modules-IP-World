@@ -1,6 +1,8 @@
 /* World.xs - XS module of the IP::World module
-   this module maps from IP addresses to country codes, 
-   using the free WorldIP database (wipmania.com) */
+
+   this module maps from IP addresses to country codes, using 
+   the free WorldIP database from wipmania.com and 
+   the free GeoIPCountry database from maxmind.com */
    
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +33,7 @@ typedef struct {
 } wip_self;
 
 #ifndef inet_pton
-/* some windows platforms don't define inet_pton */
+/* some platforms don't define inet_pton */
 int inet_pton(int af, const char *src, void *dst) {
     unsigned parts = 0;
     int part = -1;
@@ -40,7 +42,7 @@ int inet_pton(int af, const char *src, void *dst) {
     while (c = *src++) {
         if (c == '.') {
             if (++parts > 3 || part < 0) return 0;
-            *(unsigned char *)dst++ = (unsigned char)part;
+            *(uc *)dst++ = (uc)part;
             part = -1;
         } else if ((c -= '0') >= 0
                 && c <= 9) {
@@ -49,10 +51,11 @@ int inet_pton(int af, const char *src, void *dst) {
         } else return 0;
     }
     if (part < 0 || parts < 3) return 0;
-    *(unsigned char *)dst = (unsigned char)part;
+    *(uc *)dst = (uc)part;
     return 1;
 }
 #endif
+/* subsequent code is in the specialized 'XS' dialect of C */
 
 MODULE = IP::World       PACKAGE = IP::World
 
@@ -114,15 +117,14 @@ allocNew(filepath, fileLen, mode=0)
         /* all is well */
         if (mode < 2) 
 #ifdef USE_PERLIO
-                      PerlIO_close(self.io.p);
+            PerlIO_close(self.io.p);
 #else
-                      fclose(self.io.f);
+            fclose(self.io.f);
 #endif
-        
         /* For each entry there is a 4 byte address plus a 10 bit country code.
              At 3 codes/word, the number of entries = 3/16 * the number of bytes */
         self.entries = fileLen*3 >> 4;        
-        /* warn("%s length %d -> %d entries", filepath, fileLen, self.entries); */
+        /* {new} in World.pm will bless the object we return */
         RETVAL = newSVpv((const char *)(&self), sizeof(wip_self));   
     OUTPUT:
         RETVAL
@@ -134,18 +136,17 @@ getcc(self_ref, ip_sv)
     PREINIT:
         SV* self_deref;		
         char* s;
-        STRLEN len;
+        STRLEN len = 0;
         wip_self self;
         I32 flgs;
         struct in_addr netip;
         register U32 ip, *ips;
         register UV i, bottom = 0, top;
         U32 word;
-        char c[] = "**", *ret = c;
+        char c[3] = "**";
     CODE:
         /* $new_obj->getcc is only in XS/C
            check that self_ref is defined ref; dref it; check len; copy to self */
-        len = 0;
         if (sv_isobject(self_ref)) {
             self_deref = SvRV(self_ref);
             if (SvPOK(self_deref)) s = SvPV(self_deref, len);
@@ -153,7 +154,7 @@ getcc(self_ref, ip_sv)
         if (len != sizeof(wip_self))
             croak("automatic 'self' operand to getcc is not of correct type"); 
         memcpy (&self, s, sizeof(wip_self));
-        /* the ip_sv argument can be of 3 types (if error return '**') */
+        /* the ip_sv argument can be of 2 types (if error return '**') */
         if (!SvOK(ip_sv)) goto set_retval;
         flgs = SvFLAGS(ip_sv);
         if (!(flgs & (SVp_POK|SVf_NOK|SVp_NOK|SVf_IOK|SVp_IOK))) goto set_retval;
@@ -176,7 +177,7 @@ getcc(self_ref, ip_sv)
                 else bottom = i;
             }
             /* the table of country codes (3 per word) follows the table of IPs
-                move the corresponding entry to ret */
+                copy the corresponding 3 entries to word */
             word = *(ips + self.entries + bottom/3);
         } else {
             /* DASD mode */
@@ -198,6 +199,8 @@ getcc(self_ref, ip_sv)
                 else bottom = i;
             }
 #ifdef USE_PERLIO
+            /* the table of country codes (3 per word) follows the table of IPs
+                read the corresponding 3 entries into word */
             if (self.mode == 3) {
                 PerlIO_seek(self.io.p, (self.entries + bottom/3)<<2, 0);
                 PerlIO_read(self.io.p, &word, 4);
@@ -214,13 +217,13 @@ getcc(self_ref, ip_sv)
           case 1:  word = word>>10 & 0x3FF; break;
           default: word &= 0x3FF;
         }
-        if (word == 26*26) strcpy(c, "??");
+        if (word == 26*26) c[0] = c[1] = '?';
         else {
           c[0] = (word / 26) + 'A';
           c[1] = (word % 26) + 'A';
         }
         set_retval:
-        RETVAL = newSVpv(ret, 2);
+        RETVAL = newSVpv(c, 2);
     OUTPUT:
         RETVAL
 
@@ -230,12 +233,11 @@ DESTROY(self_ref)
     PREINIT:
         SV *self_deref;		
         char *s;
-        STRLEN len;
+        STRLEN len = 0;
         wip_self self;
     CODE:
         /* DESTROY gives back allocated memory
            check that self_ref is defined ref; dref it; check len; copy to self */
-        len = 0;
         if (sv_isobject(self_ref)) {
             self_deref = SvRV(self_ref);
             if (SvPOK(self_deref)) 
