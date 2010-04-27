@@ -32,9 +32,8 @@ typedef struct {
     U32  mode;
 } wip_self;
 
-#ifndef inet_pton
-/* some platforms don't define inet_pton */
-int inet_pton(int af, const char *src, void *dst) {
+/* there doesn't seem to be a way to check if function inet_pton is defined */
+int ck_ip4(const char *src, uc *dest) {
     unsigned parts = 0;
     int part = -1;
     char c;
@@ -42,7 +41,7 @@ int inet_pton(int af, const char *src, void *dst) {
     while (c = *src++) {
         if (c == '.') {
             if (++parts > 3 || part < 0) return 0;
-            *(uc *)dst++ = (uc)part;
+            *dest++ = (uc)part;
             part = -1;
         } else if ((c -= '0') >= 0
                 && c <= 9) {
@@ -51,10 +50,10 @@ int inet_pton(int af, const char *src, void *dst) {
         } else return 0;
     }
     if (part < 0 || parts < 3) return 0;
-    *(uc *)dst = (uc)part;
+    *dest = (uc)part;
     return 1;
 }
-#endif
+
 /* subsequent code is in the specialized 'XS' dialect of C */
 
 MODULE = IP::World       PACKAGE = IP::World
@@ -74,10 +73,10 @@ allocNew(filepath, fileLen, mode=0)
             allocate a block of memory and fill it from the ipworld.dat file */
         if (mode > 3) croak("operand of IP::World::new = %d, should be 0-3", mode);
 #ifdef USE_PERLIO
-        if (mode != 2) self.io.p = PerlIO_open(filepath, "r");
+        if (mode != 2) self.io.p = PerlIO_open(filepath, "rb");
         else
 #endif
-        self.io.f = fopen(filepath, "r");
+        self.io.f = fopen(filepath, "rb");
         if (!self.io.f) croak("Can't open %s: %s", filepath, strerror(errno));
         self.mode = mode;
 #ifdef HAS_MMAP
@@ -109,7 +108,7 @@ allocNew(filepath, fileLen, mode=0)
             readLen = fread(self.addr, 1, fileLen, self.io.f);
 #endif
             if (readLen < 0) croak("read from %s failed: %s", filepath, strerror(errno));
-            if (readLen != fileLen) 
+            if ((STRLEN)readLen != fileLen) 
                 croak("should have read %d bytes from %s, actually read %d", 
                       fileLen, filepath, readLen);
             self.mode = 0;
@@ -135,11 +134,11 @@ getcc(self_ref, ip_sv)
     SV* ip_sv
     PREINIT:
         SV* self_deref;		
-        char* s;
+        char *s;
         STRLEN len = 0;
         wip_self self;
         I32 flgs;
-        struct in_addr netip;
+        uc netip[4];
         register U32 ip, *ips;
         register UV i, bottom = 0, top;
         U32 word;
@@ -161,10 +160,10 @@ getcc(self_ref, ip_sv)
         s = SvPV(ip_sv, len);
         /* if the the ip operand is a dotted string, convert it to network-order U32 
            else if the operand does't look like a network-order U32, lose */
-        if (inet_pton(AF_INET, s, (void *)&netip) > 0) s = (char *)&netip; 
+        if (ck_ip4(s, netip) > 0) s = (char *)netip; 
         else if (len != 4) goto set_retval;
         /* if necessary, convert network order (big-endian) to native endianism */
-        ip = ((uc)s[0] << 24) + ((uc)s[1] << 16) + ((uc)s[2] << 8) + (uc)s[3];        
+        ip = (uc)s[0] << 24 | (uc)s[1] << 16 | (uc)s[2] << 8 | (uc)s[3];        
         /* binary-search the IP table */
         top = self.entries;
         if (self.mode < 2) {
@@ -219,8 +218,8 @@ getcc(self_ref, ip_sv)
         }
         if (word == 26*26) c[0] = c[1] = '?';
         else {
-          c[0] = (word / 26) + 'A';
-          c[1] = (word % 26) + 'A';
+          c[0] = (char)(word / 26) + 'A';
+          c[1] = (char)(word % 26) + 'A';
         }
         set_retval:
         RETVAL = newSVpv(c, 2);

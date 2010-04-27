@@ -14,7 +14,7 @@ my $errwarn = qr/(^|\b)(warning|error)(\b|$)/im;
 my $opt;
 # move '#' from following line to next line for debugging
 # for my $s ('-g') {
-for my $s ('-O3', '-O2', '-O') {
+for my $s ('-O3', '-O2', $Config{'optimize'}) {
     if (!$s) {last}
     $_ = `$cc -c $s test.c 2>&1`;
     if (!/$errwarn/) {
@@ -51,8 +51,7 @@ my $build = $class->new(
                            'LWP::UserAgent' => 0,
                            'HTTP::Status'   => 0,
                            'Time::HiRes'    => 0},
-    script_files        => 'script',
-    (sign               => 1),
+    script_files        => 'script'
 );
 # set the optimize code determined above for the C compiler
 if ($opt) {$build->config(optimize => $opt)}

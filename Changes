@@ -1,7 +1,15 @@
 Revision history for IP::World
 
+0.35  Apr 26 2010
+      * Included new ck_ip4 in World.xs, successor to inet_pton which 
+        was mostly for Windows, in which Microsoft Visual Studio
+        found C errors and warnings.
+      * Changed mode in World.xs data file opening from "r" to "rb", 
+        so that Windows will read the file in binary mode.  Maybe 
+        someday this module will pass on Windows.
+
 0.34  Apr 23 2010
-      * Revised IP::World::Builder further make databases writable 
+      * Revised IP::World::Builder further to make databases writable 
         before changing their mod dates, on Windows.  Maybe someday 
         this module will pass on Windows.
 
