@@ -1,5 +1,14 @@
 Revision history for IP::World
 
+0.36  Jul 2 2010
+      * i.r.t. RT bug #59056, modified maint_ip_world_db to check for 
+        existence of IP::World::ConfigData before checking for a 
+        datum inside it.
+      * i.r.t. FAIL 07342895 on a test system with non-standard 
+        versions of LWP::UserAgent and HTTP::Status, required at 
+        least version 5.817 (Oct 2008) of both in Build.PL.
+      * updated DB and revised tests per changes in IP space
+
 0.35  Apr 26 2010
       * Included new ck_ip4 in World.xs, successor to inet_pton which 
         was mostly for Windows, in which Microsoft Visual Studio

@@ -270,9 +270,11 @@ if (!$replfn_exists
   }
   # if the user entered a command to run at this time, do so
   #   but not if we're just testing
-  if (!$testing
-   && ($_ = IP::World::ConfigData->config('cmd'))) {system $_}
-
+  if (!$testing) {
+    eval 'require IP::World::ConfigData';
+    if (!$@
+     && ($_ = IP::World::ConfigData->config('cmd'))) {system $_}
+  }  
   # show that we updated the DB (no one may be watching...)
   my ($mday, $mon, $year) = (localtime($latestMod))[3..5];
   my $mod_date = $moname[$mon].sprintf("-%d-", $mday).($year+1900);

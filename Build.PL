@@ -48,8 +48,8 @@ my $build = $class->new(
     requires           => {'perl'           => '5.7.3',
                            'Carp'           => 0,
                            'File::ShareDir' => 0,
-                           'LWP::UserAgent' => 0,
-                           'HTTP::Status'   => 0,
+                           'LWP::UserAgent' => '5.817',
+                           'HTTP::Status'   => '5.817',
                            'Time::HiRes'    => 0},
     script_files        => 'script'
 );

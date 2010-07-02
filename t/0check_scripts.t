@@ -9,7 +9,7 @@ use Module::Build;
 
 my $build = Module::Build->current();
 my $perl = $build->config_data('perl') or die "Can't get path to perl";
-my $tail = $build->is_unixish() ? ' 2>&1' : '';
+my $tail = ' 2>&1';
 
 # maint_ip_world_db was already run as part of the build step
 # we will test its results last

@@ -21,14 +21,14 @@ name: IP-World
 provides:
   IP::World:
     file: lib/IP/World.pm
-    version: 0.35
+    version: 0.36
 requires:
   Carp: 0
   File::ShareDir: 0
-  HTTP::Status: 0
-  LWP::UserAgent: 0
+  HTTP::Status: 5.817
+  LWP::UserAgent: 5.817
   Time::HiRes: 0
   perl: v5.7.3
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.35
+version: 0.36
