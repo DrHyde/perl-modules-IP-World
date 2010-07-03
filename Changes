@@ -1,5 +1,9 @@
 Revision history for IP::World
 
+0.37  Jul 3 2010
+      * Corrected "number of tests to skip" in t/2mmap.t for systems 
+        that don't have/implement mmap.
+
 0.36  Jul 2 2010
       * i.r.t. RT bug #59056, modified maint_ip_world_db to check for 
         existence of IP::World::ConfigData before checking for a 

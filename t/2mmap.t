@@ -15,7 +15,7 @@ my $ismmap = unpack 'L', substr($$ipw, -4);
 
 # skip this test if not a Mmap system
 SKIP: {
-    skip "this system does not support Mmap", 142 if !$ismmap;
+    skip "this system does not support Mmap", 136 if !$ismmap;
     
     my ($addr, $entries) = unpack 'L2', $$ipw;
     # diag sprintf("memory ad of data is %08X, it contains %d entries", $addr, $entries);
