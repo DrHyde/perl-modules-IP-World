@@ -61,8 +61,14 @@ my $outfn2;
 if ($dual_out) {
   $outfn2 = $dd.FN.".".($replfn_exists ? 'tbe' : 'be');
 }
+
 # create the user-agent object via the package at the start of this file
 my $ua = LWP::UserAgent->new (timeout => 30);
+# MaxMind occasionally block LWP::UserAgent's default User-Agent header,
+# but I've been told that they don't mind if we lie. This one taken from
+# a real browser during one of those outages worked OK
+#    -- DCANTRELL
+$ua->agent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36');
 
 # only proxy handling is via environment variables
 if ($ENV{http_proxy} || $ENV{HTTP_PROXY}) {$ua->env_proxy}
