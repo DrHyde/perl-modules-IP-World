@@ -1,4 +1,10 @@
-Revision history for IP::World
+releases by David Cantrell:
+
+0.38  2016-XX-XX  set User-Agent in maint_ip_world_db to cope with
+                    Maxmind occasionally blocking LWP::UserAgent's
+		    default UA. Maxmind are fine with this.
+
+releases by Craig MacKenna:
 
 0.37  Jul 3 2010
       * Corrected "number of tests to skip" in t/2mmap.t for systems 
