@@ -51,7 +51,14 @@ my $build = $class->new(
                            'LWP::UserAgent' => '5.817',
                            'HTTP::Status'   => '5.817',
                            'Time::HiRes'    => 0},
-    script_files        => 'script'
+    script_files        => 'script',
+    meta_merge => {
+        license => 'other',
+        resources => {
+            repository => 'https://github.com/DrHyde/perl-modules-IP-World',
+            bugtracker => 'https://github.com/DrHyde/perl-modules-IP-World/issues'
+        }
+    },
 );
 # set the optimize code determined above for the C compiler
 if ($opt) {$build->config(optimize => $opt)}

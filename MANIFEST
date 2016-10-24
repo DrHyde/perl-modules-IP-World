@@ -8,7 +8,6 @@ lib/IP/World.pm
 lib/IP/World.pod
 lib/IP/World.xs
 MANIFEST
-META.yml
 README
 script/ip_cc_benchmark
 script/ip_world_dump
@@ -21,3 +20,5 @@ t/3tinyC.t
 t/4tinyPerl.t
 t/5pod.t
 test.c
+META.yml
+META.json
