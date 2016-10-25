@@ -22,3 +22,8 @@ t/5pod.t
 test.c
 META.yml
 META.json
+t/1fast-byname.t
+t/1fast-default.t
+t/2mmap-byname.t
+t/3tinyC-byname.t
+t/4tinyPerl-byname.t

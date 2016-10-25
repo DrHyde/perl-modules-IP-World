@@ -10,6 +10,6 @@ use t::lib::tests;
 
 use IP::World;
 
-my $ipw = IP::World->new(2);
+my $ipw = IP::World->new();
 
 tests($ipw);

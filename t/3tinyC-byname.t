@@ -8,8 +8,8 @@ use Test::More;
 END { done_testing }
 use t::lib::tests;
 
-use IP::World;
+use IP::World qw(IP_WORLD_TINY);
 
-my $ipw = IP::World->new(2);
+my $ipw = IP::World->new(IP_WORLD_TINY);
 
 tests($ipw);

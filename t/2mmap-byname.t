@@ -8,9 +8,9 @@ use Test::More;
 END { done_testing }
 use t::lib::tests;
 
-use IP::World;
+use IP::World qw(IP_WORLD_MMAP);
 
-my $ipw = IP::World->new(1);
+my $ipw = IP::World->new(IP_WORLD_MMAP);
 # get 'Mmap in use' from the object
 my $ismmap = unpack 'L', substr($$ipw, -4);
 

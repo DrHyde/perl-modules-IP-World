@@ -49,6 +49,7 @@ my $build = $class->new(
                            'Carp'           => 0,
                            'File::ShareDir' => 0,
                            'LWP::UserAgent' => '5.817',
+                           'Test::More'     => 0.88, # done_testing
                            'HTTP::Status'   => '5.817',
                            'Time::HiRes'    => 0},
     script_files        => 'script',
