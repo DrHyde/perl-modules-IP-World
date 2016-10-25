@@ -2,7 +2,9 @@ releases by David Cantrell:
 
 0.38  2016-XX-XX  set User-Agent in maint_ip_world_db to cope with
                     Maxmind occasionally blocking LWP::UserAgent's
-		    default UA. Maxmind are fine with this.
+                    default UA. Maxmind are fine with this;
+                  provide constants to use to set mode instead of
+                    numbers (see https://rt.cpan.org/Public/Bug/Display.html?id=70687)
 
 releases by Craig MacKenna:
 
