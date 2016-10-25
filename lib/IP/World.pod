@@ -20,6 +20,13 @@ The author uses this package for customizing served web pages to
 the location of the visitor, particularly to quote prices of items
 for sale in the visitor's currency.  Also for server log analysis.
 
+=head2 EXPORTS
+
+You can optionally export some constants (the IP_WORLD_* constants
+listed below) when you 'use' the module. For example:
+
+  use IP::World qw(IP_WORLD_TINY_PERL);
+
 =head2 METHODS
 
 =head3 new
@@ -30,25 +37,31 @@ In object-oriented terms, this is a I<constructor>.  It returns a
 scalar object that's used in calling the I<getcc> method as described
 below.
 
-I<$mode> selects the operating mode:
+I<$mode> is optional and selects the operating mode:
 
 =over 4
 
-=item 0: fast, keeps data in memory (643 KB at initial release, but 
-who cares these days?)
+=item 0 or IP_WORLD_FAST
 
-=item 1: Mmap, keeps data in Mmap memory, may reduce total memory 
+fast, keeps data in memory (643 KB at initial release, but 
+who cares these days?) This is the default.
+
+=item 1 or IP_WORLD_MMAP
+
+Mmap, keeps data in Mmap memory, may reduce total memory 
 requirement of sibling processes. If your system doesn't support Mmap, 
 1 operates like 0.
 
-=item 2: tiny, slow but saves memory by searching the database on disk 
-         using traditional C library I/O calls.
+=item 2 or IP_WORLD_TINY
 
-=item 3: tiny PerlIO, slow but saves memory by searching the 
-         database on disk using Perl I/O calls.  If your system 
-         doesn't support Perl I/O, 3 works like 2.  If it does, 
-         performance may differ between this option and the preceding 
-         one.
+tiny, slow but saves memory by searching the database on disk using traditional
+C library I/O calls.
+
+=item 3 or IP_WORLD_TINY_PERL
+
+tiny PerlIO, slow but saves memory by searching the database on disk using Perl
+I/O calls.  If your system doesn't support Perl I/O, 3 works like 2.  If it
+does, performance may differ between this option and the preceding one.
 
 =back
 

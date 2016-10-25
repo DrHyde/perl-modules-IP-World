@@ -8,15 +8,19 @@ use strict;
 use warnings;
 use Carp;
 use File::ShareDir qw(module_dir);
+use Exporter qw(import);
 
 require DynaLoader;
-# Exporter is not needed because we're object-oriented
 our @ISA = qw(DynaLoader);
 
 our $VERSION = '0.38';
 
+our @EXPORT_OK = qw(IP_WORLD_FAST IP_WORLD_MMAP IP_WORLD_TINY IP_WORLD_TINY_PERL);
+
 sub new {
     my ($pkg, $mode) = @_;
+    if(!defined($mode)) { $mode = 0 }
+
     my $dd = module_dir('IP::World');
     if (!$dd) {croak "Can't locate directory containing database file"}
     my $filepath = "$dd/ipworld.dat";
@@ -33,6 +37,12 @@ sub new {
     bless (\$self, $pkg);
     return \$self;
 }
+
+sub IP_WORLD_FAST { 0 }
+sub IP_WORLD_MMAP { 1 }
+sub IP_WORLD_TINY { 2 }
+sub IP_WORLD_TINY_PERL { 3 }
+
 # 'getcc' and 'DESTROY' are implemented in the IP/World.xs file.
 
 bootstrap IP::World $VERSION;
