@@ -11,12 +11,8 @@ perl:
   - "5.24"
 matrix:
   include:
-    - perl: "5.20"
+    - perl: 5.20
       env: COVERAGE=1
-      before_install:
-        - cpanm --quiet --notest Devel::Cover::Report::Coveralls
-        - cpanm --quiet --notest .
-      script: "perl Build.PL --extra-compiler-flags \"-O0 --coverage\" --extra-linker-flags \"--coverage\" && ./Build && cover -test -report coveralls -ignore_re /CORE/\\w+\\.h$"
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
 sudo: false
