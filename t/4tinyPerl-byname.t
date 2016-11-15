@@ -4,6 +4,7 @@
 
 use strict;
 use warnings;
+use lib '.';
 use Test::More;
 END { done_testing }
 use t::lib::tests;
