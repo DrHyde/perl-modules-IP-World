@@ -1,5 +1,9 @@
 releases by David Cantrell:
 
+0.39  2016-11-15  test jiggery-pokery to make sure stuff works once
+                    . is removed from default @INC (see
+                    http://www.nntp.perl.org/group/perl.cpan.workers/2016/11/msg1513.html)
+
 0.38  2016-10-27  set User-Agent in maint_ip_world_db to cope with
                     Maxmind occasionally blocking LWP::UserAgent's
                     default UA. Maxmind are fine with this;
