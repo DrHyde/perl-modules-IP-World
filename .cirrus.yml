@@ -7,7 +7,7 @@ freebsd_tests_task:
   test_script:
     - pkg install -y perl5
     - echo|cpan App::cpanminus
-    - cpanm --installdeps --with-recommends --with-configure .
+    - cpanm --installdeps --with-recommends .
     - perl Build.PL
     - ./Build
     - ./Build test
