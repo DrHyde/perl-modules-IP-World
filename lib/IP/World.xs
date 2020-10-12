@@ -10,7 +10,14 @@ extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+
+/* Required by Mac OS with XCode 12
+   Works on Linux and BSD
+   Not found on Windows but works anyway without */
+#ifndef WIN32
 #include <sys/mman.h>
+#endif
+
 #ifdef __cplusplus
 }
 #endif
