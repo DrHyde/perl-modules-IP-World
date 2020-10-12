@@ -10,6 +10,7 @@ extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#include <sys/mman.h>
 #ifdef __cplusplus
 }
 #endif
@@ -38,7 +39,7 @@ int ck_ip4(const char *src, uc *dest) {
     int part = -1;
     char c;
 
-    while (c = *src++) {
+    while ((c = *src++)) {
         if (c == '.') {
             if (++parts > 3 || part < 0) return 0;
             *dest++ = (uc)part;
@@ -110,7 +111,7 @@ allocNew(filepath, fileLen, mode=0)
             if (readLen < 0) croak("read from %s failed: %s", filepath, strerror(errno));
             if ((STRLEN)readLen != fileLen) 
                 croak("should have read %d bytes from %s, actually read %d", 
-                      fileLen, filepath, readLen);
+                      (int)fileLen, filepath, readLen);
             self.mode = 0;
         }
         /* all is well */
