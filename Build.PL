@@ -60,13 +60,6 @@ my $build = $class->new(
             bugtracker => 'https://github.com/DrHyde/perl-modules-IP-World/issues'
         }
     },
-
-    # work-around to let it build on Mac OS with XCode 12
-    # 
-    # once https://github.com/Perl/perl5/pull/18234 is merged and a patched
-    # EU::CB is on the CPAN, we can add a build-dependency on that version and
-    # remove this
-    ($^O eq 'darwin' ? (extra_compiler_flags => [qw(-Wno-error=implicit-function-declaration)]) : ())
 );
 # set the optimize code determined above for the C compiler
 if ($opt) {$build->config(optimize => $opt)}
