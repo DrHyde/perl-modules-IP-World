@@ -40,5 +40,5 @@ jobs:
             perl -Mparent -e0 || cpanm parent
             rm -rf /home/runner/.cpanm/work/*
             cpanm --installdeps . || cat /home/runner/.cpanm/work/*/build.log
-            perl Makefile.PL
-            make test TEST_VERBOSE=1
+            perl Build.PL
+            Build test verbose=1
