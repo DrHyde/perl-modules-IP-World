@@ -41,4 +41,4 @@ jobs:
             rm -rf /home/runner/.cpanm/work/*
             cpanm --installdeps . || cat /home/runner/.cpanm/work/*/build.log
             perl Build.PL
-            Build test verbose=1
+            ./Build test verbose=1
