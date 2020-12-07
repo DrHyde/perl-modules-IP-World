@@ -12,6 +12,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cpanm ExtUtils::MakeMaker Probe::Perl Test::Pod Test::Pod::Coverage
+          perl -Mparent -e0 || cpanm parent
           cpanm --installdeps .
           cpanm Devel::Cover::Report::Coveralls
           cover -test -report Coveralls
