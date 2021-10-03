@@ -10,7 +10,8 @@ jobs:
         uses: shogo82148/actions-setup-perl@v1
       - name: Test and build
         run: |
-          cpanm --installdeps .
+          cpanm --quiet --notest ExtUtils::MakeMaker Probe::Perl Test::Pod Test::Pod::Coverage parent
+          cpanm --quiet --notest --installdeps .
           echo|perl Build.PL
           ./Build test
           ./Build dist
