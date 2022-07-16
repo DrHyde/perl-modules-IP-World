@@ -28,6 +28,6 @@ jobs:
         run: |
           perl -v
           cpan ExtUtils::MakeMaker Test::Pod Test::Pod::Coverage App::cpanminus
-          cpanm --installdeps .
+          cpanm --installdeps . || (cat /github/home/.cpanm/work/*/build.log; false)
           perl Build.PL
           ./Build test verbose=1
