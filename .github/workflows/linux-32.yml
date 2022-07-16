@@ -29,5 +29,5 @@ jobs:
           perl -v
           cpan ExtUtils::MakeMaker Test::Pod Test::Pod::Coverage App::cpanminus
           cpanm --installdeps .
-          perl Makefile.PL
-          make test TEST_VERBOSE=1
+          perl Build.PL
+          ./Build test verbose=1
