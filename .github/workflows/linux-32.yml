@@ -29,7 +29,7 @@ jobs:
             perlbrew switch perl-5.32.0
             perlbrew install-cpanm
             perl -V
-            cpanm ExtUtils::MakeMaker Test::Pod Test::Pod::Coverage App::cpanminus
+            cpanm ExtUtils::MakeMaker Probe::Perl Test::Pod Test::Pod::Coverage App::cpanminus
             cpanm --installdeps .
             perl Build.PL
             ./Build test TEST_VERBOSE=1
