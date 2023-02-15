@@ -1,5 +1,5 @@
 on: [push, pull_request]
-name: OpenBSD install
+name: FreeBSD
 
 jobs:
   build:
@@ -10,34 +10,35 @@ jobs:
         uses: shogo82148/actions-setup-perl@v1
       - name: Test and build
         run: |
-          cpanm --quiet --notest ExtUtils::MakeMaker Probe::Perl Test::Pod Test::Pod::Coverage parent
-          cpanm --quiet --notest --installdeps .
+          cpanm ExtUtils::MakeMaker Probe::Perl Test::Pod Test::Pod::Coverage parent
+          cpanm --installdeps .
           echo|perl Build.PL
           ./Build test
           ./Build dist
       - uses: actions/upload-artifact@v2
         with:
-          name: dist-for-openbsd-install
+          name: dist-for-freebsd-install
           path: '*.tar.gz'
           retention-days: 1
-  install-openbsd:
+  install-freebsd:
     runs-on: macos-10.15
     needs: build
     steps:
       - uses: actions/download-artifact@v2
         with:
-          name: dist-for-openbsd-install
-      - name: Install on OpenBSD
-        uses: cross-platform-actions/action@v0.3.1
+          name: dist-for-freebsd-install
+      - name: Install on FreeBSD
+        uses: cross-platform-actions/action@v0.10.0
         with:
-          operating_system: openbsd
-          version: 6.9
+          operating_system: freebsd
+          version: 13.1
           shell: bash
           run: |
             mkdir dist-for-test &&
             tar -C dist-for-test -xzf *.tar.gz &&
             cd dist-for-test/* &&
+            sudo pkg install -y perl5 &&
             cpan App::cpanminus &&
-            /home/runner/perl5/bin/cpanm --quiet --notest --installdeps . &&
+            /home/runner/perl5/bin/cpanm --installdeps . &&
             /home/runner/perl5/bin/cpanm -v .
 
