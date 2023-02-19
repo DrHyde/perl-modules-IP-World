@@ -15,7 +15,7 @@ jobs:
           echo|perl Build.PL
           ./Build test
           ./Build dist
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: dist-for-linux-install
           path: '*.tar.gz'
